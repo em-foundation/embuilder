@@ -7,8 +7,9 @@
             "name": "Launch Extension",
             "runtimeExecutable": "${execPath}",
             "args": [
-                "${workspaceFolder}/../emscript-content-mirror/",
-                "--extensionDevelopmentPath=${workspaceFolder}"
+                "--disable-extensions",
+                "--extensionDevelopmentPath=${workspaceFolder}",
+                "${workspaceFolder}/../emscript-content-mirror/"
             ],
             "outFiles": [
                 "${workspaceFolder}/out/**/*.js"
