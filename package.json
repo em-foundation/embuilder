@@ -28,6 +28,24 @@
         "ui"
     ],
     "contributes": {
+        "viewsContainers": {
+            "activitybar": [
+                {
+                    "id": "emscript",
+                    "title": "EM•Script",
+                    "icon": "icons/file_type_emunit.svg"
+                }
+            ]
+        },
+        "views": {
+            "emscript": [
+                {
+                    "id": "emscriptBrowserView",
+                    "name": "Browser",
+                    "icon": "icons/file_type_emunit.svg"
+                }
+            ]
+        },
         "iconThemes": [
             {
                 "id": "emscript-icons",
