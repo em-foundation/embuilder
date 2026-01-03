@@ -1,0 +1,28 @@
+{
+    "iconDefinitions": {
+        "_emunit": {
+            "iconPath": "./icons/file_type_emunit.svg"
+        },
+        "_empackage": {
+            "iconPath": "./icons/folder_type_empackage.svg"
+        },
+        "_empackage_open": {
+            "iconPath": "./icons/folder_type_empackage_opened.svg"
+        },
+        "_embucket": {
+            "iconPath": "./icons/folder_type_embucket.svg"
+        },
+        "_embucket_open": {
+            "iconPath": "./icons/folder_type_embucket-opened.svg"
+        },
+        "_emboards": {
+            "iconPath": "./icons/file_type_emboards.svg"
+        }
+    },
+    "fileExtensions": {
+        "em.ts": "_emunit"
+    },
+    "fileNames": {
+        "em-boards": "_emboards"
+    }
+}
