@@ -1,0 +1,27 @@
+{
+    "iconDefinitions": {
+        "unit": {
+            "iconPath": "./icons/unit.svg"
+        },
+        "package": {
+            "iconPath": "./icons/package.svg"
+        },
+        "bucket": {
+            "iconPath": "./icons/bucket.svg"
+        },
+        "gear": {
+            "iconPath": "./icons/gear.svg"
+        }
+    },
+    "fileExtensions": {
+        "em.ts": "unit",
+        "ini": "gear"
+    },
+    "fileNames": {
+        "em-boards": "gear"
+    },
+    "folderNames": {
+        "test.pkg": "package",
+        "test.gist": "bucket",
+    }
+}

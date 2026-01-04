@@ -1,0 +1,22 @@
+{
+    "name": "emscript-browser",
+    "displayName": "EM•Script Browser",
+    "description": "EMS file/folder icons for vscode.dev/github.dev",
+    "version": "0.0.1",
+    "publisher": "the-em-foundation",
+    "engines": {
+        "vscode": "^1.80.0"
+    },
+    "categories": [
+        "Themes"
+    ],
+    "contributes": {
+        "iconThemes": [
+            {
+                "id": "emscript-icons",
+                "label": "EM•Script Icons",
+                "path": "./icon-theme.json"
+            }
+        ]
+    }
+}
