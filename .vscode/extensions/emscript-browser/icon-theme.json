@@ -22,6 +22,6 @@
     },
     "folderNames": {
         "test.pkg": "package",
-        "test.gist": "bucket",
+        "test.gist": "bucket"
     }
 }
