@@ -4,11 +4,28 @@
     "description": "EMS file/folder icons for vscode.dev/github.dev",
     "version": "0.0.1",
     "publisher": "the-em-foundation",
+    "license": "MIT",
     "engines": {
         "vscode": "^1.80.0"
     },
+    "scripts": {
+        "build": "tsc -p .",
+        "watch": "tsc -w -p ."
+    },
+    "devDependencies": {
+        "@types/vscode": "^1.80.0",
+        "typescript": "^5.7.2"
+    },
     "categories": [
         "Themes"
+    ],
+    "main": "./out/extension.js",
+    "browser": "./out/extension.js",
+    "activationEvents": [
+        "workspaceContains:emscript.ini"
+    ],
+    "extensionKind": [
+        "ui"
     ],
     "contributes": {
         "iconThemes": [

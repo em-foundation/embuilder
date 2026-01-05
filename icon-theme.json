@@ -1,16 +1,16 @@
 {
     "iconDefinitions": {
-        "unit": {
-            "iconPath": "./icons/unit.svg"
-        },
-        "package": {
-            "iconPath": "./icons/package.svg"
-        },
         "bucket": {
             "iconPath": "./icons/bucket.svg"
         },
         "gear": {
             "iconPath": "./icons/gear.svg"
+        },
+        "package": {
+            "iconPath": "./icons/package.svg"
+        },
+        "unit": {
+            "iconPath": "./icons/unit.svg"
         }
     },
     "fileExtensions": {
@@ -19,9 +19,5 @@
     },
     "fileNames": {
         "em-boards": "gear"
-    },
-    "folderNames": {
-        "test.pkg": "package",
-        "test.gist": "bucket"
     }
 }

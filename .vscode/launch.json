@@ -1,0 +1,22 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "type": "extensionHost",
+            "request": "launch",
+            "name": "Launch Extension",
+            "runtimeExecutable": "${execPath}",
+            "args": [
+                "--extensionDevelopmentPath=${workspaceFolder}",
+                "--disable-extensions",
+                "--user-data-dir=${workspaceFolder}/.extHost-userdata",
+                "--extensions-dir=${workspaceFolder}/.extHost-extensions",
+                "${workspaceFolder}/../emscript/emscript-content"
+            ],
+            "outFiles": [
+                "${workspaceFolder}/out/**/*.js"
+            ],
+            "preLaunchTask": "Build Extension"
+        }
+    ]
+}

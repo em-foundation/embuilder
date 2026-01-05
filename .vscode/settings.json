@@ -6,7 +6,9 @@
         "**/.DS_Store": true,
         "**/Thumbs.db": true,
         ".vscode": false,
-        ".history": true
+        ".history": true,
+        ".extHost-extensions": false,
+        ".extHost-userdata": false
     },
     "explorerExclude.backup": {}
 }
