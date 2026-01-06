@@ -4,6 +4,7 @@
         "gear": { "iconPath": "./icons/gear.svg" },
         "package": { "iconPath": "./icons/package.svg" },
         "unit": { "iconPath": "./icons/unit.svg" },
+        "workspace": { "iconPath": "./icons/workspace.svg" },
         "default-folder": { "iconPath": "./icons/folder.svg" },
         "default-file":   { "iconPath": "./icons/file.svg" }
     },
@@ -18,6 +19,7 @@
         "em-boards": "gear"
     },
     "folderNames": {
+        "workspace": "workspace",
         "adi.max326xx": "package",
         "adi.distro.max326xx": "bucket",
         "adi.mcu.max326xx": "bucket",

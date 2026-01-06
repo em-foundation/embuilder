@@ -4,7 +4,7 @@ import * as Path from 'path'
 const root = process.argv[2]
 
 let jsonObj: Record<string, any> = JSON.parse(Fs.readFileSync('icon-theme.json', 'utf-8'))
-const fnObj: Record<string, string> = {};
+const fnObj: Record<string, string> = { "workspace": "workspace" };
 
 for (const p of Fs.readdirSync(root)) {
     fnObj[p] = 'package'

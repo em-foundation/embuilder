@@ -11,7 +11,7 @@
                 "--disable-extensions",
                 "--user-data-dir=${workspaceFolder}/.extHost-userdata",
                 "--extensions-dir=${workspaceFolder}/.extHost-extensions",
-                "${workspaceFolder}/../emscript-mirror/emscript-mirror.code-workspace"
+                "${workspaceFolder}/../emscript-mirror"
             ],
             "outFiles": [
                 "${workspaceFolder}/out/**/*.js"
