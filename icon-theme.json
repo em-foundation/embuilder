@@ -6,7 +6,7 @@
         "unit": { "iconPath": "./icons/unit.svg" },
         "workspace": { "iconPath": "./icons/workspace.svg" },
         "default-folder": { "iconPath": "./icons/folder.svg" },
-        "default-file":   { "iconPath": "./icons/file.svg" }
+        "default-file": { "iconPath": "./icons/file.svg" }
     },
     "folder": "default-folder",
     "rootFolder": "default-folder",
