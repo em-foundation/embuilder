@@ -1,23 +1,73 @@
 {
     "iconDefinitions": {
-        "bucket": {
-            "iconPath": "./icons/bucket.svg"
-        },
-        "gear": {
-            "iconPath": "./icons/gear.svg"
-        },
-        "package": {
-            "iconPath": "./icons/package.svg"
-        },
-        "unit": {
-            "iconPath": "./icons/unit.svg"
-        }
+        "bucket": { "iconPath": "./icons/bucket.svg" },
+        "gear": { "iconPath": "./icons/gear.svg" },
+        "package": { "iconPath": "./icons/package.svg" },
+        "unit": { "iconPath": "./icons/unit.svg" },
+        "default-folder": { "iconPath": "./icons/folder.svg" },
+        "default-file":   { "iconPath": "./icons/file.svg" }
     },
+    "folder": "default-folder",
+    "rootFolder": "default-folder",
+    "file": "default-file",
     "fileExtensions": {
         "em.ts": "unit",
         "ini": "gear"
     },
     "fileNames": {
         "em-boards": "gear"
+    },
+    "folderNames": {
+        "adi.max326xx": "package",
+        "adi.distro.max326xx": "bucket",
+        "adi.mcu.max326xx": "bucket",
+        "bob.pkg": "package",
+        "adi.gist": "bucket",
+        "bob.gist": "bucket",
+        "bob.scratch": "bucket",
+        "bob.test": "bucket",
+        "edge.ai": "bucket",
+        "emm.gist": "bucket",
+        "gist.nrf52": "bucket",
+        "gist.nrf54": "bucket",
+        "sil.gist": "bucket",
+        "ti.gist": "bucket",
+        "ti.radio.test": "bucket",
+        "em.core": "package",
+        "em.arch.arc": "bucket",
+        "em.arch.arm": "bucket",
+        "em.hal": "bucket",
+        "em.lang": "bucket",
+        "em.mcu": "bucket",
+        "em.utils": "bucket",
+        "em.etc": "package",
+        "em.benchmark.coremark": "bucket",
+        "em.examples.basic": "bucket",
+        "em.examples.combo": "bucket",
+        "em.tours": "bucket",
+        "em.radio": "package",
+        "em.rf.ble": "bucket",
+        "em.rf.core": "bucket",
+        "em.rf.driver": "bucket",
+        "em.rf.samples": "bucket",
+        "em.target": "package",
+        "em.build.segger": "bucket",
+        "emm.9305": "package",
+        "emm.distro.9305": "bucket",
+        "emm.mcu.9305": "bucket",
+        "nordic.nrf5x": "package",
+        "nordic.distro.nrf52": "bucket",
+        "nordic.distro.nrf54": "bucket",
+        "nordic.mcu.nrf52": "bucket",
+        "nordic.mcu.nrf54": "bucket",
+        "nordic.radio.nrf52": "bucket",
+        "nordic.radio.nrf54": "bucket",
+        "silabs.efr32x": "package",
+        "silabs.distro.efr32x": "bucket",
+        "silabs.mcu.efr32x": "bucket",
+        "ti.cc23xx": "package",
+        "ti.distro.cc23xx": "bucket",
+        "ti.mcu.cc23xx": "bucket",
+        "ti.radio.cc23xx": "bucket"
     }
 }
