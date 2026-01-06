@@ -7,6 +7,11 @@ export async function activate(ctx: Vsc.ExtensionContext) {
     const repoRoot = ws.uri
     const logicalRoot = Vsc.Uri.joinPath(repoRoot, 'workspace')
     await ctx.workspaceState.update('ems.logicalRoot', logicalRoot.toString())
+    await Vsc.workspace.getConfiguration('files').update(
+        'exclude',
+        { 'tsconfig.json': true, 'tsconfig.base.json': true },
+        Vsc.ConfigurationTarget.Workspace
+    )
 }
 
 export function deactivate() {
