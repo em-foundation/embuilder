@@ -35,6 +35,25 @@
                 "label": "EM•Script Icons",
                 "path": "./icon-theme.json"
             }
+        ],
+        "semanticTokenScopes": [
+            {
+                "scopes": {
+                    "em-debug": [],
+                    "em-domain": [],
+                    "em-ident": [],
+                    "em-special": [],
+                    "em-unit": [],
+                    "em-wrong": []
+                }
+            }
+        ],
+        "themes": [
+            {
+                "label": "EM•Script Dark",
+                "uiTheme": "vs-dark",
+                "path": "./themes/em-dark-color-theme.json"
+            }
         ]
     }
 }
