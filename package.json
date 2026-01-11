@@ -15,6 +15,7 @@
     },
     "scripts": {
         "build": "tsc -p .",
+        "publish-dev": "npm version prerelease --preid dev --no-git-tag-version && npm run build && vsce publish --pre-release --allow-star-activation",
         "vsce-pack": "vsce pack --allow-star-activation",
         "watch": "tsc -w -p ."
     },

@@ -16,12 +16,13 @@ const EXCLUDES = {
 }
 
 export async function activate(ctx: Vsc.ExtensionContext) {
+    console.log("EM•Script Browser activated")
     Vsc.window.showInformationMessage("EM•Script Browser activated")
     const ws = Vsc.workspace.workspaceFolders?.[0]
     if (!ws) return
     ctx.subscriptions.push(
         Vsc.languages.registerDocumentSemanticTokensProvider(
-            { scheme: "file", pattern: "**/*.em.ts" },
+            { pattern: "**/*.em.ts" },
             new SemTok.Provider(),
             SemTok.legend()
         )
