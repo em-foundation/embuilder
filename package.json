@@ -1,15 +1,21 @@
 {
-    "name": "emscript-browser",
-    "displayName": "EM•Script Browser",
-    "description": "EMS file/folder icons for vscode.dev/github.dev",
+    "name": "embrowser",
+    "displayName": "EM•Browser",
+    "description": "viewer for EM•Script content",
     "version": "0.0.1",
     "publisher": "the-em-foundation",
+    "icon": "icons/logo12.png",
     "license": "MIT",
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/em-foundation/embrowser"
+    },
     "engines": {
         "vscode": "^1.80.0"
     },
     "scripts": {
         "build": "tsc -p .",
+        "vsce-pack": "vsce pack --allow-star-activation",
         "watch": "tsc -w -p ."
     },
     "devDependencies": {
