@@ -23,7 +23,7 @@ export async function activate(ctx: Vsc.ExtensionContext) {
     const ws = Vsc.workspace.workspaceFolders?.[0]
     if (!ws) return
 
-    const view = new ContentView.Provider()
+    const view = new ContentView.Provider(ctx.extensionUri)
     ctx.subscriptions.push(
         Vsc.window.registerTreeDataProvider("embrowser.content", view)
     )
