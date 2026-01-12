@@ -2,7 +2,7 @@
     "name": "embrowser",
     "displayName": "EM•Browser",
     "description": "viewer for EM•Script content",
-    "version": "26.0.3",
+    "version": "26.0.4",
     "publisher": "the-em-foundation",
     "icon": "icons/logo12.png",
     "license": "MIT",
@@ -13,27 +13,23 @@
     "engines": {
         "vscode": "^1.80.0"
     },
+    "main": "./out/node/extension.js",
+    "browser": "./out/web/extension.js",
     "scripts": {
-        "build:node": "tsc -p tsconfig.node.json",
-        "build:web": "esbuild src/extension.ts --bundle --format=cjs --platform=browser --external:vscode --external:typescript --outfile=out/web/extension.js",
-        "build": "npm run build:node && npm run build:web",
+        "build:node": "esbuild src/extension.ts --bundle --format=cjs --platform=node --external:vscode --outfile=out/node/extension.js",
+        "build:web": "esbuild src/extension.ts --bundle --format=cjs --platform=browser --external:vscode --outfile=out/web/extension.js",
+        "build": "npm run typecheck && npm run build:node && npm run build:web",
+        "typecheck": "tsc -p tsconfig.json --noEmit",
         "publish-dev": "npm version patch --no-git-tag-version && npm run build && vsce publish --pre-release --allow-star-activation",
-        "vsce-pack": "vsce pack --allow-star-activation",
-        "watch-cli": "tsc -w -p tsconfig.node.json"
+        "vsce-pack": "npm run build && vsce pack --allow-star-activation"
     },
     "devDependencies": {
-        "@types/node": "^25.0.3",
         "@types/vscode": "^1.80.0",
         "esbuild": "^0.27.2",
         "typescript": "^5.7.2"
     },
     "categories": [
         "Themes"
-    ],
-    "main": "./out/node/extension.js",
-    "browser": "./out/web/extension.js",
-    "activationEvents": [
-        "*"
     ],
     "extensionKind": [
         "ui"
@@ -52,17 +48,11 @@
             "embrowser": [
                 {
                     "id": "embrowser.content",
-                    "name": "EM•porium"
+                    "name": "EM•porium",
+                    "icon": "icons/logo-mono.svg"
                 }
             ]
         },
-        "iconThemes": [
-            {
-                "id": "emscript-icons",
-                "label": "EM•Script Icons",
-                "path": "./icon-theme.json"
-            }
-        ],
         "semanticTokenScopes": [
             {
                 "scopes": {

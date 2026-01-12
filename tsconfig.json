@@ -2,13 +2,15 @@
     "compilerOptions": {
         "target": "ES2022",
         "module": "ES2022",
-        "lib": ["ES2020", "WebWorker"],
+        "lib": ["ES2022", "DOM", "WebWorker"],        
         "rootDir": "src",
         "outDir": "out",
         "strict": true,
         "sourceMap": true,
         "moduleResolution": "Bundler",
-        "skipLibCheck": true
+        "skipLibCheck": true,
+        "types": ["vscode"]
     },
     "include": ["src/**/*.ts"]
 }
+
