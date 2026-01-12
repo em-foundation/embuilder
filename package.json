@@ -2,7 +2,7 @@
     "name": "embrowser",
     "displayName": "EM•Browser",
     "description": "viewer for EM•Script content",
-    "version": "0.0.1",
+    "version": "26.0.2",
     "publisher": "the-em-foundation",
     "icon": "icons/logo12.png",
     "license": "MIT",
@@ -14,21 +14,24 @@
         "vscode": "^1.80.0"
     },
     "scripts": {
-        "build": "tsc -p .",
-        "publish-dev": "npm version prerelease --preid dev --no-git-tag-version && npm run build && vsce publish --pre-release --allow-star-activation",
+        "build:node": "tsc -p tsconfig.node.json",
+        "build:web": "esbuild src/extension.ts --bundle --format=cjs --platform=browser --external:vscode --external:typescript --outfile=out/web/extension.js",
+        "build": "npm run build:node && npm run build:web",
+        "publish-dev": "npm version patch --no-git-tag-version && npm run build && vsce publish --pre-release --allow-star-activation",
         "vsce-pack": "vsce pack --allow-star-activation",
-        "watch": "tsc -w -p ."
+        "watch-cli": "tsc -w -p tsconfig.node.json"
     },
     "devDependencies": {
         "@types/node": "^25.0.3",
         "@types/vscode": "^1.80.0",
+        "esbuild": "^0.27.2",
         "typescript": "^5.7.2"
     },
     "categories": [
         "Themes"
     ],
-    "main": "./out/extension.js",
-    "browser": "./out/extension.js",
+    "main": "./out/node/extension.js",
+    "browser": "./out/web/extension.js",
     "activationEvents": [
         "*"
     ],
