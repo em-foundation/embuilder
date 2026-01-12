@@ -1,5 +1,7 @@
 import * as Vsc from 'vscode'
-import * as SemTok from "./SemTok";
+
+import * as ContentView from './ContentView'
+import * as SemTok from './SemTok'
 
 const EXCLUDES = {
     ".clang-format": true,
@@ -20,6 +22,12 @@ export async function activate(ctx: Vsc.ExtensionContext) {
     Vsc.window.showInformationMessage("EM•Script Browser activated")
     const ws = Vsc.workspace.workspaceFolders?.[0]
     if (!ws) return
+
+    const view = new ContentView.Provider()
+    ctx.subscriptions.push(
+        Vsc.window.registerTreeDataProvider("embrowser.content", view)
+    )
+
     ctx.subscriptions.push(
         Vsc.languages.registerDocumentSemanticTokensProvider(
             { pattern: "**/*.em.ts" },

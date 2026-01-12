@@ -2,7 +2,7 @@
     "name": "embrowser",
     "displayName": "EM•Browser",
     "description": "viewer for EM•Script content",
-    "version": "26.0.2",
+    "version": "26.0.3",
     "publisher": "the-em-foundation",
     "icon": "icons/logo12.png",
     "license": "MIT",
@@ -39,6 +39,23 @@
         "ui"
     ],
     "contributes": {
+        "viewsContainers": {
+            "activitybar": [
+                {
+                    "id": "embrowser",
+                    "title": "EM•Browser",
+                    "icon": "icons/logo-mono.svg"
+                }
+            ]
+        },
+        "views": {
+            "embrowser": [
+                {
+                    "id": "embrowser.content",
+                    "name": "EM•porium"
+                }
+            ]
+        },
         "iconThemes": [
             {
                 "id": "emscript-icons",
