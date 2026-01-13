@@ -1,21 +1,7 @@
 import * as Vsc from 'vscode'
 
 import * as ContentView from './ContentView'
-import * as SemTok from './SemTok'
-
-const EXCLUDES = {
-    ".clang-format": true,
-    ".gitignore": true,
-    ".prettierrc": true,
-    "LICENSE": true,
-    "package.json": true,
-    "package-lock.json": true,
-    "README.md": true,
-    "tsconfig.json": true,
-    "tsconfig.base.json": true,
-    "node_modules": true,
-    ".vscode": true,
-}
+// import * as SemTok from './SemTok'
 
 export async function activate(ctx: Vsc.ExtensionContext) {
     console.log("EM•Script Browser activated")
@@ -28,13 +14,13 @@ export async function activate(ctx: Vsc.ExtensionContext) {
         Vsc.window.registerTreeDataProvider("embrowser.content", view)
     )
 
-    ctx.subscriptions.push(
-        Vsc.languages.registerDocumentSemanticTokensProvider(
-            { pattern: "**/*.em.ts" },
-            new SemTok.Provider(),
-            SemTok.legend()
-        )
-    )
+    // ctx.subscriptions.push(
+    //     Vsc.languages.registerDocumentSemanticTokensProvider(
+    //         { pattern: "**/*.em.ts" },
+    //         new SemTok.Provider(),
+    //         SemTok.legend()
+    //     )
+    // )
 
     const onEditor = async (ted?: Vsc.TextEditor) => {
         if (!ted) return
@@ -45,9 +31,15 @@ export async function activate(ctx: Vsc.ExtensionContext) {
     ctx.subscriptions.push(Vsc.window.onDidChangeActiveTextEditor(onEditor))
     ctx.subscriptions.push(Vsc.workspace.onDidOpenTextDocument(async () => setReadonlyIfPossible()))
 
+    ctx.subscriptions.push(
+        Vsc.commands.registerCommand("embrowser.openReadonly", async (uri: Vsc.Uri) => {
+            await Vsc.commands.executeCommand("vscode.open", uri, { preview: true })
+            await Vsc.commands.executeCommand("workbench.action.files.setActiveEditorReadonlyInSession")
+        })
+    )
+
     void onEditor(Vsc.window.activeTextEditor)
 
-    await Vsc.workspace.getConfiguration('files').update('exclude', EXCLUDES, Vsc.ConfigurationTarget.Workspace)
     await Vsc.workspace.getConfiguration().update('workbench.colorTheme', 'EM•Script Dark', Vsc.ConfigurationTarget.Workspace)
     await Vsc.workspace.getConfiguration().update('git.enabled', false, Vsc.ConfigurationTarget.Workspace)
 }

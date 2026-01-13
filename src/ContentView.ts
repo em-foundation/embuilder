@@ -127,6 +127,11 @@ export class Provider implements Vsc.TreeDataProvider<Node> {
                 const item = new Node("file", uri, name, Vsc.TreeItemCollapsibleState.None)
                 item.iconPath = this.fileIcon(name)
                 item.contextValue = "file"
+                item.command = {
+                    command: "embrowser.openReadonly",
+                    title: "",
+                    arguments: [uri]
+                }
                 return item
             })
 

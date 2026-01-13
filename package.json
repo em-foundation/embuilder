@@ -35,6 +35,12 @@
         "ui"
     ],
     "contributes": {
+        "commands": [
+            {
+                "command": "embrowser.openReadonly",
+                "title": "EM•Browser: Open Readonly"
+            }
+        ],
         "viewsContainers": {
             "activitybar": [
                 {
