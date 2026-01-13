@@ -2,7 +2,7 @@
     "name": "embrowser",
     "displayName": "EM•Browser",
     "description": "viewer for EM•Script content",
-    "version": "26.0.5",
+    "version": "26.0.8",
     "publisher": "the-em-foundation",
     "icon": "icons/logo12.png",
     "license": "MIT",
@@ -28,9 +28,6 @@
         "esbuild": "^0.27.2",
         "typescript": "^5.7.2"
     },
-    "activationEvents": [
-        "*"
-    ],
     "categories": [
         "Themes"
     ],
