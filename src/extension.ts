@@ -6,7 +6,6 @@ import * as SemTok from './SemTok'
 export async function activate(ctx: Vsc.ExtensionContext) {
     console.log('*** EM•Script Browser activate: begin')
     try {
-        Vsc.window.showInformationMessage('EM•Script Browser activated')
         const ws = Vsc.workspace.workspaceFolders?.[0]
         if (!ws) return
 
@@ -14,6 +13,8 @@ export async function activate(ctx: Vsc.ExtensionContext) {
         ctx.subscriptions.push(
             Vsc.window.registerTreeDataProvider('embrowser.content', view)
         )
+        await Vsc.commands.executeCommand('embrowser.content.focus')
+        await Vsc.commands.executeCommand('workbench.view.extension.embrowser')
 
         ctx.subscriptions.push(
             Vsc.languages.registerDocumentSemanticTokensProvider(
@@ -45,6 +46,8 @@ export async function activate(ctx: Vsc.ExtensionContext) {
 
         const cfg_ws = Vsc.workspace.getConfiguration('workbench')
         await cfg_ws.update('tree.indent', 20, Vsc.ConfigurationTarget.Workspace)
+
+        Vsc.window.showInformationMessage('EM•Script Browser activated')
 
     } catch (e) {
         console.log('*** EM•Script Browser activate: fail')
