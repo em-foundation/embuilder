@@ -1,6 +1,7 @@
 {
     "iconDefinitions": {
         "bucket": { "iconPath": "./icons/bucket.svg" },
+        "compass": { "iconPath": "./icons/compass.png" },
         "gear": { "iconPath": "./icons/gear.svg" },
         "package": { "iconPath": "./icons/package.svg" },
         "unit": { "iconPath": "./icons/unit.svg" },
@@ -13,6 +14,7 @@
     "file": "default-file",
     "fileExtensions": {
         "em.ts": "unit",
+        "emtour": "compass",
         "ini": "gear"
     },
     "fileNames": {

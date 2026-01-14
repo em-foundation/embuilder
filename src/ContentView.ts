@@ -1,6 +1,6 @@
-import * as Vsc from "vscode"
+import * as Vsc from 'vscode'
 
-type NodeKind = "workspace" | "package" | "bucket" | "dir" | "file"
+type NodeKind = 'workspace' | 'package' | 'bucket' | 'dir' | 'file'
 
 class Node extends Vsc.TreeItem {
     constructor(
@@ -53,15 +53,19 @@ export class Provider implements Vsc.TreeDataProvider<Node> {
     }
 
     private fileIcon(name: string): { light: Vsc.Uri, dark: Vsc.Uri } {
-        if (name === "em-boards" || name.endsWith(".ini")) {
-            return this.icon("icons/gear.svg")
+        if (name === 'em-boards' || name.endsWith('.ini')) {
+            return this.icon('icons/gear.svg')
         }
 
-        if (name.endsWith(".em.ts")) {
-            return this.icon("icons/unit.svg")
+        if (name.endsWith('.em.ts')) {
+            return this.icon('icons/unit.svg')
         }
 
-        return this.icon("icons/file.svg")
+        if (name.endsWith('.emtour')) {
+            return this.icon('icons/compass.png')
+        }
+
+        return this.icon('icons/file.svg')
     }
 
 
@@ -71,65 +75,65 @@ export class Provider implements Vsc.TreeDataProvider<Node> {
             return []
         }
 
-        const wsUri = Vsc.Uri.joinPath(root, "workspace")
+        const wsUri = Vsc.Uri.joinPath(root, 'workspace')
 
         // top-level -> workspace node
         if (!element) {
             const item = new Node(
-                "workspace",
+                'workspace',
                 wsUri,
-                "workspace",
+                'workspace',
                 Vsc.TreeItemCollapsibleState.Expanded
             )
-            item.iconPath = this.icon("icons/workspace.svg")
-            item.contextValue = "workspace"
+            item.iconPath = this.icon('icons/workspace.svg')
+            item.contextValue = 'workspace'
             return [item]
         }
 
         // workspace -> packages
-        if (element.kind === "workspace") {
+        if (element.kind === 'workspace') {
             const dirNames = await this.readDirs(element.uri)
             return dirNames.map((name) => {
                 const pkgUri = Vsc.Uri.joinPath(element.uri, name)
-                const item = new Node("package", pkgUri, name, Vsc.TreeItemCollapsibleState.Collapsed)
-                item.iconPath = this.icon("icons/package.svg")
-                item.contextValue = "package"
+                const item = new Node('package', pkgUri, name, Vsc.TreeItemCollapsibleState.Collapsed)
+                item.iconPath = this.icon('icons/package.svg')
+                item.contextValue = 'package'
                 return item
             })
         }
 
         // package -> buckets
-        if (element.kind === "package") {
+        if (element.kind === 'package') {
             const dirNames = await this.readDirs(element.uri)
             return dirNames.map((name) => {
                 const bucketUri = Vsc.Uri.joinPath(element.uri, name)
-                const item = new Node("bucket", bucketUri, name, Vsc.TreeItemCollapsibleState.Collapsed)
-                item.iconPath = this.icon("icons/bucket.svg")
-                item.contextValue = "bucket"
+                const item = new Node('bucket', bucketUri, name, Vsc.TreeItemCollapsibleState.Collapsed)
+                item.iconPath = this.icon('icons/bucket.svg')
+                item.contextValue = 'bucket'
                 return item
             })
         }
 
         // bucket/dir -> all children (dirs + files)
-        if (element.kind === "bucket" || element.kind === "dir") {
+        if (element.kind === 'bucket' || element.kind === 'dir') {
             const entries = await this.readAll(element.uri)
 
             const nodes = entries.map(({ name, type }) => {
                 const uri = Vsc.Uri.joinPath(element.uri, name)
 
                 if ((type & Vsc.FileType.Directory) !== 0) {
-                    const item = new Node("dir", uri, name, Vsc.TreeItemCollapsibleState.Collapsed)
-                    item.iconPath = this.icon("icons/folder.svg")
-                    item.contextValue = "dir"
+                    const item = new Node('dir', uri, name, Vsc.TreeItemCollapsibleState.Collapsed)
+                    item.iconPath = this.icon('icons/folder.svg')
+                    item.contextValue = 'dir'
                     return item
                 }
 
-                const item = new Node("file", uri, name, Vsc.TreeItemCollapsibleState.None)
+                const item = new Node('file', uri, name, Vsc.TreeItemCollapsibleState.None)
                 item.iconPath = this.fileIcon(name)
-                item.contextValue = "file"
+                item.contextValue = 'file'
                 item.command = {
-                    command: "embrowser.openReadonly",
-                    title: "",
+                    command: 'embrowser.openReadonly',
+                    title: '',
                     arguments: [uri]
                 }
                 return item
@@ -137,8 +141,8 @@ export class Provider implements Vsc.TreeDataProvider<Node> {
 
             // folders first, then files
             nodes.sort((a, b) => {
-                const ak = a.kind === "dir" ? 0 : 1
-                const bk = b.kind === "dir" ? 0 : 1
+                const ak = a.kind === 'dir' ? 0 : 1
+                const bk = b.kind === 'dir' ? 0 : 1
                 if (ak !== bk) return ak - bk
                 return a.label!.toString().localeCompare(b.label!.toString())
             })

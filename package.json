@@ -24,6 +24,8 @@
         "vsce-pack": "npm run build && vsce pack --allow-star-activation"
     },
     "devDependencies": {
+        "@types/js-yaml": "^4.0.9",
+        "@types/markdown-it": "^14.1.2",
         "@types/vscode": "^1.80.0",
         "esbuild": "^0.27.2",
         "typescript": "^5.7.2"
@@ -42,8 +44,92 @@
             {
                 "command": "embrowser.openReadonly",
                 "title": "EM•Browser: Open Readonly"
+            },
+            {
+                "command": "em.tour.start",
+                "title": "EM•Browser: Start Tour"
+            },
+            {
+                "command": "em.tour.end",
+                "title": "End",
+                "icon": "$(trash)"
+            },
+            {
+                "command": "em.tour.next",
+                "title": "Next",
+                "icon": "$(debug-continue)"
+            },
+            {
+                "command": "em.tour.prev",
+                "title": "Back",
+                "icon": "$(debug-reverse-continue)"
+            },
+            {
+                "command": "em.tour.refresh",
+                "title": "Refresh",
+                "icon": "$(debug-restart)"
+            },
+            {
+                "command": "em.tour.restart",
+                "title": "Restart",
+                "icon": "$(home)"
             }
         ],
+        "menus": {
+            "commandPalette": [
+                {
+                    "command": "em.tour.start",
+                    "when": "false"
+                },
+                {
+                    "command": "em.tour.end",
+                    "when": "false"
+                },
+                {
+                    "command": "em.tour.next",
+                    "when": "false"
+                },
+                {
+                    "command": "em.tour.prev",
+                    "when": "false"
+                },
+                {
+                    "command": "em.tour.refresh",
+                    "when": "false"
+                },
+                {
+                    "command": "em.tour.restart",
+                    "when": "false"
+                }
+            ],
+            "view/title": [
+                {
+                    "command": "em.tour.prev",
+                    "when": "view == em.toursView",
+                    "group": "navigation@1"
+                },
+                {
+                    "command": "em.tour.next",
+                    "when": "view == em.toursView",
+                    "group": "navigation@2"
+                },
+                {
+                    "command": "em.tour.refresh",
+                    "when": "view == em.toursView",
+                    "group": "navigation@3"
+                },
+                {
+                    "command": "em.tour.restart",
+                    "when": "view == em.toursView",
+                    "group": "navigation@4"
+                },
+                {
+                    "command": "em.tour.end",
+                    "when": "view == em.toursView",
+                    "group": "navigation@5"
+                }
+            ]
+        },
         "viewsContainers": {
             "activitybar": [
                 {
@@ -59,6 +145,13 @@
                     "id": "embrowser.content",
                     "name": "",
                     "icon": "icons/logo-mono.svg"
+                }
+            ],
+            "explorer": [
+                {
+                    "type": "webview",
+                    "id": "em.toursView",
+                    "name": "EM•Browser Tour Guide"
                 }
             ]
         },
@@ -81,5 +174,9 @@
                 "path": "./themes/em-dark-color-theme.json"
             }
         ]
+    },
+    "dependencies": {
+        "js-yaml": "^4.1.1",
+        "markdown-it": "^14.1.0"
     }
 }
