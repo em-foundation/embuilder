@@ -1,7 +1,7 @@
 import * as Vsc from 'vscode'
 
 import * as ContentView from './ContentView'
-// import * as SemTok from './SemTok'
+import * as SemTok from './SemTok'
 
 export async function activate(ctx: Vsc.ExtensionContext) {
     console.log('*** EM•Script Browser activate: begin')
@@ -15,13 +15,13 @@ export async function activate(ctx: Vsc.ExtensionContext) {
             Vsc.window.registerTreeDataProvider('embrowser.content', view)
         )
 
-        // ctx.subscriptions.push(
-        //     Vsc.languages.registerDocumentSemanticTokensProvider(
-        //         { pattern: '**/*.em.ts' },
-        //         new SemTok.Provider(),
-        //         SemTok.legend()
-        //     )
-        // )
+        ctx.subscriptions.push(
+            Vsc.languages.registerDocumentSemanticTokensProvider(
+                { pattern: '**/*.em.ts' },
+                new SemTok.Provider(),
+                SemTok.legend()
+            )
+        )
 
         const onEditor = async (ted?: Vsc.TextEditor) => {
             if (!ted) return
