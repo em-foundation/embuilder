@@ -23,23 +23,12 @@ export async function activate(ctx: Vsc.ExtensionContext) {
             )
         )
 
-        const onEditor = async (ted?: Vsc.TextEditor) => {
-            if (!ted) return
-            if (ted.document.uri.scheme !== 'file' && ted.document.uri.scheme !== 'vscode-vfs') return
-            await setReadonlyIfPossible()
-        }
-
-        ctx.subscriptions.push(Vsc.window.onDidChangeActiveTextEditor(onEditor))
-        ctx.subscriptions.push(Vsc.workspace.onDidOpenTextDocument(async () => setReadonlyIfPossible()))
-
         ctx.subscriptions.push(
             Vsc.commands.registerCommand('embrowser.openReadonly', async (uri: Vsc.Uri) => {
                 await Vsc.commands.executeCommand('vscode.open', uri, { preview: true })
                 await Vsc.commands.executeCommand('workbench.action.files.setActiveEditorReadonlyInSession')
             })
         )
-
-        void onEditor(Vsc.window.activeTextEditor)
 
         const cfg = Vsc.workspace.getConfiguration()
         await cfg.update('workbench.colorTheme', 'EM•Script Dark', Vsc.ConfigurationTarget.Workspace)
@@ -49,6 +38,10 @@ export async function activate(ctx: Vsc.ExtensionContext) {
         const cfg_ed = Vsc.workspace.getConfiguration('editor')
         await cfg_ed.update('fontSize', 13, Vsc.ConfigurationTarget.Workspace)
         await cfg_ed.update('minimap.enabled', false, Vsc.ConfigurationTarget.Workspace)
+
+        const cfg_ts = Vsc.workspace.getConfiguration('typescript')
+        cfg_ts.update('disableAutomaticTypeAcquisition', true, Vsc.ConfigurationTarget.Workspace)
+        cfg_ts.update('tsserver.web.typeAcquisition.enabled', false, Vsc.ConfigurationTarget.Workspace)
 
         const cfg_ws = Vsc.workspace.getConfiguration('workbench')
         await cfg_ws.update('tree.indent', 20, Vsc.ConfigurationTarget.Workspace)
@@ -62,12 +55,4 @@ export async function activate(ctx: Vsc.ExtensionContext) {
 }
 
 export function deactivate() {
-}
-
-async function setReadonlyIfPossible(): Promise<void> {
-    try {
-        await Vsc.commands.executeCommand('workbench.action.files.setActiveEditorReadonlyInSession')
-    } catch {
-        // ignore
-    }
 }

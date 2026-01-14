@@ -2,7 +2,7 @@
     "name": "embrowser",
     "displayName": "EM•Browser",
     "description": "viewer for EM•Script content",
-    "version": "26.0.10",
+    "version": "26.0.14",
     "publisher": "the-em-foundation",
     "icon": "icons/logo12.png",
     "license": "MIT",
@@ -33,6 +33,9 @@
     ],
     "extensionKind": [
         "ui"
+    ],
+    "activationEvents": [
+        "*"
     ],
     "contributes": {
         "commands": [
