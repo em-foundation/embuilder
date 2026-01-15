@@ -2,7 +2,7 @@
     "name": "embrowser",
     "displayName": "EM•Browser",
     "description": "viewer for EM•Script content",
-    "version": "26.0.15",
+    "version": "26.0.17",
     "publisher": "the-em-foundation",
     "icon": "icons/logo12.png",
     "license": "MIT",

@@ -91,7 +91,6 @@ export async function end() {
         let ted = await Vsc.window.showTextDocument(file.doc, DOC_OPTS)
         if (file.decorMap) file.decorMap.forEach((v, k) => ted.setDecorations(v.type, []))
         if (!ted0) ted0 = ted
-        await Vsc.commands.executeCommand('workbench.action.files.resetActiveEditorReadonlyInSession')
     }
     curTour = null
     if (tedMonitor) {
