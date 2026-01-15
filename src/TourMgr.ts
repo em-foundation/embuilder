@@ -180,11 +180,11 @@ export async function start(uri: Vsc.Uri) {
     stepEnd = curTour!.steps.length - 1
     fileTab = []
 
-    let ws = Vsc.workspace.workspaceFolders?.[0]?.uri
+    const ws = Vsc.workspace.workspaceFolders?.[0]?.uri
     if (!ws) return
 
     for (let fn of curTour!.files) {
-        fileTab.push({ uri: Vsc.Uri.joinPath(ws, fn.replace(':', '/')) })
+        fileTab.push({ uri: Vsc.Uri.joinPath(ws, 'workspace', fn.replace(':', '/')) })
     }
 
     Vsc.window.tabGroups.all.forEach(tg => Vsc.window.tabGroups.close(tg))
@@ -265,8 +265,8 @@ export class ViewProvider implements Vsc.WebviewViewProvider {
         let cv = ViewProvider.curView
 
         if (!ViewProvider.cssText) {
-            let cssName = Vsc.env.uiKind === Vsc.UIKind.Web ? 'style-web.css' : 'style-desktop.css'
-            let cssUri = Vsc.Uri.joinPath(ctx.extensionUri, 'etc', 'tour-resources', cssName)
+            let cssName = Vsc.env.uiKind === Vsc.UIKind.Web ? 'style-win32.css' : 'style-win32.css' /// TODO: fix
+            let cssUri = Vsc.Uri.joinPath(ctx.extensionUri, 'tour-resources', cssName)
             ViewProvider.cssText = await readText(cssUri)
         }
 
