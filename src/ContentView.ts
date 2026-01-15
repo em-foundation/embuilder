@@ -132,7 +132,7 @@ export class Provider implements Vsc.TreeDataProvider<Node> {
                 item.iconPath = this.fileIcon(name)
                 item.contextValue = 'file'
                 item.command = {
-                    command: 'embrowser.openReadonly',
+                    command: name.endsWith('.emtour') ? 'em.tour.start' : 'embrowser.openReadonly',
                     title: '',
                     arguments: [uri]
                 }
