@@ -2,12 +2,29 @@ import * as Vsc from 'vscode'
 
 import * as ContentView from './ContentView'
 import * as SemTok from './SemTok'
+import * as TourMgr from './TourMgr'
+
+const ASSOCS = {
+    '*.em.ts': 'typescript',
+    '*.emtour': 'markdown',
+    'em-boards': 'yaml',
+}
 
 export async function activate(ctx: Vsc.ExtensionContext) {
     console.log('*** EM•Script Browser activate: begin')
     try {
         const ws = Vsc.workspace.workspaceFolders?.[0]
         if (!ws) return
+
+        await TourMgr.init(ctx)
+        ctx.subscriptions.push(Vsc.commands.registerCommand('em.renderDoc', TourMgr.ViewProvider.render))
+        ctx.subscriptions.push(Vsc.commands.registerCommand('em.tour.start', TourMgr.start))
+        ctx.subscriptions.push(Vsc.commands.registerCommand('em.tour.end', TourMgr.end))
+        ctx.subscriptions.push(Vsc.commands.registerCommand('em.tour.next', TourMgr.next))
+        ctx.subscriptions.push(Vsc.commands.registerCommand('em.tour.prev', TourMgr.prev))
+        ctx.subscriptions.push(Vsc.commands.registerCommand('em.tour.refresh', TourMgr.refresh))
+        ctx.subscriptions.push(Vsc.commands.registerCommand('em.tour.restart', TourMgr.restart))
+
 
         const view = new ContentView.Provider(ctx.extensionUri)
         ctx.subscriptions.push(
@@ -32,20 +49,15 @@ export async function activate(ctx: Vsc.ExtensionContext) {
         )
 
         const cfg = Vsc.workspace.getConfiguration()
-        await cfg.update('workbench.colorTheme', 'EM•Script Dark', Vsc.ConfigurationTarget.Workspace)
         // await cfg.update('git.enabled', false, Vsc.ConfigurationTarget.Workspace)
         await cfg.update('breadcrumbs.enabled', false, Vsc.ConfigurationTarget.Workspace)
-
-        const cfg_ed = Vsc.workspace.getConfiguration('editor')
-        await cfg_ed.update('fontSize', 13, Vsc.ConfigurationTarget.Workspace)
-        await cfg_ed.update('minimap.enabled', false, Vsc.ConfigurationTarget.Workspace)
-
-        const cfg_ts = Vsc.workspace.getConfiguration('typescript')
-        cfg_ts.update('disableAutomaticTypeAcquisition', true, Vsc.ConfigurationTarget.Workspace)
-        cfg_ts.update('tsserver.web.typeAcquisition.enabled', false, Vsc.ConfigurationTarget.Workspace)
-
-        const cfg_ws = Vsc.workspace.getConfiguration('workbench')
-        await cfg_ws.update('tree.indent', 20, Vsc.ConfigurationTarget.Workspace)
+        await cfg.update('editor.fontSize', 13, Vsc.ConfigurationTarget.Workspace)
+        await cfg.update('editor.minimap.enabled', false, Vsc.ConfigurationTarget.Workspace)
+        await cfg.update('files.associations', ASSOCS, Vsc.ConfigurationTarget.Workspace)
+        await cfg.update('typescript.disableAutomaticTypeAcquisition', true, Vsc.ConfigurationTarget.Workspace)
+        await cfg.update('typescript.tsserver.web.typeAcquisition.enabled', false, Vsc.ConfigurationTarget.Workspace)
+        await cfg.update('workbench.colorTheme', 'EM•Script Dark', Vsc.ConfigurationTarget.Workspace)
+        await cfg.update('workbench.tree.indent', 20, Vsc.ConfigurationTarget.Workspace)
 
         Vsc.window.showInformationMessage('EM•Script Browser activated')
 
