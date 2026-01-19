@@ -8,8 +8,7 @@
             "runtimeExecutable": "${execPath}",
             "args": [
                 "--extensionDevelopmentPath=${workspaceFolder}",
-                "--disable-extensions",
-                "${workspaceFolder}/../emscript-mirror"
+                "${workspaceFolder}/../emporium"
             ],
             "outFiles": [
                 "${workspaceFolder}/out/**/*.js"

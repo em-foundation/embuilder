@@ -34,6 +34,12 @@ export async function activate(ctx: Vsc.ExtensionContext) {
         await Vsc.commands.executeCommand('workbench.view.extension.embrowser')
 
         ctx.subscriptions.push(
+            Vsc.commands.registerCommand('embrowser.revealInExplorer', async (node: ContentView.Node) => {
+                if (node?.uri) await Vsc.commands.executeCommand('revealInExplorer', node.uri)
+            })
+        )
+
+        ctx.subscriptions.push(
             Vsc.languages.registerDocumentSemanticTokensProvider(
                 { pattern: '**/*.em.ts' },
                 new SemTok.Provider(),
@@ -51,7 +57,7 @@ export async function activate(ctx: Vsc.ExtensionContext) {
         const cfg = Vsc.workspace.getConfiguration()
         // await cfg.update('git.enabled', false, Vsc.ConfigurationTarget.Workspace)
         await cfg.update('breadcrumbs.enabled', false, Vsc.ConfigurationTarget.Workspace)
-        await cfg.update('editor.fontSize', 13, Vsc.ConfigurationTarget.Workspace)
+        await cfg.update('editor.fontSize', 14, Vsc.ConfigurationTarget.Workspace)
         await cfg.update('editor.minimap.enabled', false, Vsc.ConfigurationTarget.Workspace)
         await cfg.update('files.associations', ASSOCS, Vsc.ConfigurationTarget.Workspace)
         await cfg.update('typescript.disableAutomaticTypeAcquisition', true, Vsc.ConfigurationTarget.Workspace)
@@ -59,7 +65,7 @@ export async function activate(ctx: Vsc.ExtensionContext) {
         await cfg.update('workbench.colorTheme', 'EM•Script Dark', Vsc.ConfigurationTarget.Workspace)
         await cfg.update('workbench.tree.indent', 20, Vsc.ConfigurationTarget.Workspace)
 
-        Vsc.window.showInformationMessage('EM•Script Browser activated')
+        Vsc.window.showInformationMessage('EM•Script Browser activated [version ]')
 
     } catch (e) {
         console.log('*** EM•Script Browser activate: fail')

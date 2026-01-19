@@ -2,7 +2,7 @@ import * as Vsc from 'vscode'
 
 type NodeKind = 'workspace' | 'package' | 'bucket' | 'dir' | 'file'
 
-class Node extends Vsc.TreeItem {
+export class Node extends Vsc.TreeItem {
     constructor(
         public readonly kind: NodeKind,
         public readonly uri: Vsc.Uri,
@@ -86,7 +86,7 @@ export class Provider implements Vsc.TreeDataProvider<Node> {
                 Vsc.TreeItemCollapsibleState.Expanded
             )
             item.iconPath = this.icon('icons/workspace.svg')
-            item.contextValue = 'workspace'
+            item.contextValue = 'embrowser.nodeHasUri'
             return [item]
         }
 
@@ -97,7 +97,7 @@ export class Provider implements Vsc.TreeDataProvider<Node> {
                 const pkgUri = Vsc.Uri.joinPath(element.uri, name)
                 const item = new Node('package', pkgUri, name, Vsc.TreeItemCollapsibleState.Collapsed)
                 item.iconPath = this.icon('icons/package.svg')
-                item.contextValue = 'package'
+                item.contextValue = 'embrowser.nodeHasUri'
                 return item
             })
         }
@@ -109,7 +109,7 @@ export class Provider implements Vsc.TreeDataProvider<Node> {
                 const bucketUri = Vsc.Uri.joinPath(element.uri, name)
                 const item = new Node('bucket', bucketUri, name, Vsc.TreeItemCollapsibleState.Collapsed)
                 item.iconPath = this.icon('icons/bucket.svg')
-                item.contextValue = 'bucket'
+                item.contextValue = 'embrowser.nodeHasUri'
                 return item
             })
         }
@@ -124,15 +124,15 @@ export class Provider implements Vsc.TreeDataProvider<Node> {
                 if ((type & Vsc.FileType.Directory) !== 0) {
                     const item = new Node('dir', uri, name, Vsc.TreeItemCollapsibleState.Collapsed)
                     item.iconPath = this.icon('icons/folder.svg')
-                    item.contextValue = 'dir'
+                    item.contextValue = 'embrowser.nodeHasUri'
                     return item
                 }
 
                 const item = new Node('file', uri, name, Vsc.TreeItemCollapsibleState.None)
                 item.iconPath = this.fileIcon(name)
-                item.contextValue = 'file'
+                item.contextValue = 'embrowser.nodeHasUri'
                 item.command = {
-                    command: name.endsWith('.emtour') ? 'em.tour.start' : 'embrowser.openReadonly',
+                    command: name.endsWith('.emtour') ? 'em.tour.start' : 'vscode.open',
                     title: '',
                     arguments: [uri]
                 }

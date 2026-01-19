@@ -46,6 +46,10 @@
                 "title": "EM•Browser: Open Readonly"
             },
             {
+                "command": "embrowser.revealInExplorer",
+                "title": "EM•Browser: Reveal in Explorer"
+            },
+            {
                 "command": "em.tour.start",
                 "title": "EM•Browser: Start Tour"
             },
@@ -100,6 +104,13 @@
                 {
                     "command": "em.tour.restart",
                     "when": "false"
+                }
+            ],
+            "view/item/context": [
+                {
+                    "command": "embrowser.revealInExplorer",
+                    "when": "view == embrowser.content && viewItem == embrowser.nodeHasUri",
+                    "group": "navigation@10"
                 }
             ],
             "view/title": [
