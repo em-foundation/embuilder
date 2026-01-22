@@ -1,6 +1,6 @@
 import * as Vsc from 'vscode'
 
-type NodeKind = 'workspace' | 'package' | 'bucket' | 'dir' | 'file'
+type NodeKind = 'workspace' | 'package' | 'bucket' | 'dir' | 'file' | 'build'
 
 export class Node extends Vsc.TreeItem {
     constructor(
@@ -94,9 +94,10 @@ export class Provider implements Vsc.TreeDataProvider<Node> {
         if (element.kind === 'workspace') {
             const dirNames = await this.readDirs(element.uri)
             return dirNames.map((name) => {
+                const kind = (name == '.emscript') ? 'build' : 'package'
                 const pkgUri = Vsc.Uri.joinPath(element.uri, name)
-                const item = new Node('package', pkgUri, name, Vsc.TreeItemCollapsibleState.Collapsed)
-                item.iconPath = this.icon('icons/package.svg')
+                const item = new Node(kind, pkgUri, name, Vsc.TreeItemCollapsibleState.Collapsed)
+                item.iconPath = this.icon(`icons/${kind}.svg`)
                 item.contextValue = 'embrowser.nodeHasUri'
                 return item
             })
@@ -115,7 +116,7 @@ export class Provider implements Vsc.TreeDataProvider<Node> {
         }
 
         // bucket/dir -> all children (dirs + files)
-        if (element.kind === 'bucket' || element.kind === 'dir') {
+        if (element.kind === 'bucket' || element.kind === 'dir' || element.kind === 'build') {
             const entries = await this.readAll(element.uri)
 
             const nodes = entries.map(({ name, type }) => {
