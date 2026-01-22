@@ -1,7 +1,7 @@
 {
     "name": "embrowser",
     "displayName": "EM•Browser",
-    "description": "viewer for EM•Script content",
+    "description": "VS Code support for EM•Script",
     "version": "26.0.17",
     "publisher": "the-em-foundation",
     "icon": "icons/logo12.png",
@@ -13,12 +13,9 @@
     "engines": {
         "vscode": "^1.80.0"
     },
-    "main": "./out/node/extension.js",
-    "browser": "./out/web/extension.js",
+    "main": "./out/extension.js",
     "scripts": {
-        "build:node": "esbuild src/extension.ts --bundle --format=cjs --platform=node --external:vscode --outfile=out/node/extension.js",
-        "build:web": "esbuild src/extension.ts --bundle --format=cjs --platform=browser --external:vscode --outfile=out/web/extension.js",
-        "build": "npm run typecheck && npm run build:node && npm run build:web",
+        "build": "npm run typecheck && esbuild src/extension.ts --bundle --format=cjs --platform=node --external:vscode --outfile=out/extension.js",
         "typecheck": "tsc -p tsconfig.json --noEmit",
         "publish-dev": "npm version patch --no-git-tag-version && npm run build && vsce publish --pre-release --allow-star-activation",
         "vsce-pack": "npm run build && vsce pack --allow-star-activation"
@@ -26,15 +23,16 @@
     "devDependencies": {
         "@types/js-yaml": "^4.0.9",
         "@types/markdown-it": "^14.1.2",
+        "@types/node": "^25.0.10",
         "@types/vscode": "^1.80.0",
         "esbuild": "^0.27.2",
         "typescript": "^5.7.2"
     },
     "categories": [
-        "Themes"
+        "Programming Languages"
     ],
     "extensionKind": [
-        "ui"
+        "workspace"
     ],
     "activationEvents": [
         "*"

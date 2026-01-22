@@ -3,6 +3,7 @@ import * as Vsc from 'vscode'
 import * as ContentView from './ContentView'
 import * as SemTok from './SemTok'
 import * as TourMgr from './TourMgr'
+import * as Utils from './Session'
 
 const ASSOCS = {
     '*.em.ts': 'typescript',
@@ -65,7 +66,8 @@ export async function activate(ctx: Vsc.ExtensionContext) {
         await cfg.update('workbench.colorTheme', 'EM•Script Dark', Vsc.ConfigurationTarget.Workspace)
         await cfg.update('workbench.tree.indent', 20, Vsc.ConfigurationTarget.Workspace)
 
-        Vsc.window.showInformationMessage('EM•Script Browser activated [version ]')
+        const vers = Utils.getVersFull()
+        Vsc.window.showInformationMessage(`EM•Browser activated [ EM•Script version ${vers} ]`)
 
     } catch (e) {
         console.log('*** EM•Script Browser activate: fail')

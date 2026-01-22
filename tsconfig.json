@@ -9,7 +9,7 @@
         "sourceMap": true,
         "moduleResolution": "Bundler",
         "skipLibCheck": true,
-        "types": ["vscode"]
+        "types": ["vscode", "node"]
     },
     "include": ["src/**/*.ts"]
 }
