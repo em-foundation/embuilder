@@ -33,10 +33,7 @@ export async function activate(ctx: Vsc.ExtensionContext) {
         ctx.subscriptions.push(Vsc.commands.registerCommand('em.tour.refresh', TourMgr.refresh))
         ctx.subscriptions.push(Vsc.commands.registerCommand('em.tour.restart', TourMgr.restart))
 
-        const view = new ContentView.Provider(ctx.extensionUri)
-        ctx.subscriptions.push(
-            Vsc.window.registerTreeDataProvider('embrowser.content', view)
-        )
+        ContentView.init(ctx)
         await Vsc.commands.executeCommand('embrowser.content.focus')
         await Vsc.commands.executeCommand('workbench.view.extension.embrowser')
 

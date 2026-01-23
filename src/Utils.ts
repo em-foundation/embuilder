@@ -55,22 +55,31 @@ export function rootUri(): Vsc.Uri {
 
 export function spawnLog(cli: string[]) {
     const cwd = workPath()
-    const proc = Cp.spawn('npx', cli, {
-        cwd,
-        shell: process.platform === 'win32'
-    })
-    proc.stdout.setEncoding('utf8')
-    proc.stdout.on('data', (data => loggerC.addInfo(data)))
-    proc.stderr.setEncoding('utf8')
-    proc.stderr.on('data', (data => loggerC.addErr(data)))
-    proc.on('close', (stat => {
-        loggerC.addBreak(true)
-    }))
-    proc.on('error', (err) => {
-        loggerC.addErr(err.message)
+
+    return new Promise<number>((resolve, reject) => {
+        const proc = Cp.spawn('npx', cli, {
+            cwd,
+            shell: process.platform === 'win32'
+        })
+
+        proc.stdout.setEncoding('utf8')
+        proc.stdout.on('data', (data) => loggerC.addInfo(data))
+
+        proc.stderr.setEncoding('utf8')
+        proc.stderr.on('data', (data) => loggerC.addErr(data))
+
+        proc.on('error', (err) => {
+            loggerC.addErr(err.message)
+            reject(err)
+        })
+
+        proc.on('close', (code, signal) => {
+            loggerC.addBreak(true)
+            if (code === 0) resolve(0)
+            else reject(new Error(`emscript failed: code=${code} signal=${signal ?? ''}`.trim()))
+        })
     })
 }
-
 
 export function spawnSync(cli: string[]): string {
     const cwd = workPath()

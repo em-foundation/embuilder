@@ -4,6 +4,17 @@ const VscFs = Vsc.workspace.fs
 
 type NodeKind = 'workspace' | 'package' | 'bucket' | 'dir' | 'file' | 'build'
 
+let curView: Provider
+
+export function init(ctx: Vsc.ExtensionContext) {
+    curView = new Provider(ctx.extensionUri)
+    ctx.subscriptions.push(Vsc.window.registerTreeDataProvider('embrowser.content', curView))
+}
+
+export function refresh() {
+    curView.refresh()
+}
+
 export class Node extends Vsc.TreeItem {
     constructor(
         public readonly kind: NodeKind,
@@ -16,13 +27,14 @@ export class Node extends Vsc.TreeItem {
 }
 
 export class Provider implements Vsc.TreeDataProvider<Node> {
+
     private readonly _onDidChangeTreeData = new Vsc.EventEmitter<Node | undefined | null | void>()
     readonly onDidChangeTreeData = this._onDidChangeTreeData.event
 
     constructor(private readonly extUri: Vsc.Uri) { }
 
     refresh(): void {
-        this._onDidChangeTreeData.fire()
+        this._onDidChangeTreeData.fire(undefined)
     }
 
     getTreeItem(element: Node): Vsc.TreeItem {

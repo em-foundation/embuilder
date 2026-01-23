@@ -1,3 +1,4 @@
+import * as ContentView from './ContentView'
 import * as StatusItems from './StatusItems'
 import * as Utils from './Utils'
 import * as Vsc from 'vscode'
@@ -18,11 +19,13 @@ export async function bindSetup(uri?: Vsc.Uri) {
     // Utils.updateConfig()
 }
 
-export function build(uri: Vsc.Uri, cid: string) {
+export async function build(uri: Vsc.Uri, cid: string) {
     const opt = cid === 'em.buildLoad' ? '--load' : cid === 'em.buildMeta' ? '--meta' : ''
-    Utils.spawnLog(['emscript', 'build', '--unit', Utils.unitPath(uri)])
+    await Utils.spawnLog(['emscript', 'build', '--unit', Utils.unitPath(uri)])
+    ContentView.refresh()
 }
 
-export function clean() {
-    Utils.spawnLog(['emscript', 'clean'])
+export async function clean() {
+    await Utils.spawnLog(['emscript', 'clean'])
+    ContentView.refresh()
 }
