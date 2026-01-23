@@ -20,13 +20,10 @@ export async function bindSetup(uri?: Vsc.Uri) {
 
 export function build(uri: Vsc.Uri, cid: string) {
     const opt = cid === 'em.buildLoad' ? '--load' : cid === 'em.buildMeta' ? '--meta' : ''
-    // if (Utils.isUnitFile(uri)) {
-    //     let upath = Utils.mkUpath(uri)
-    //     Utils.build(upath, opt)
-    // }
-    // else {
-    //     Vsc.window.showErrorMessage('not a unit')
-    // }
+    const out = Utils.spawnSync(['emscript', 'build', '--unit', Utils.unitPath(uri)])
+    console.log(`*** build: ${out}`)
 }
 
-
+export function clean() {
+    const out = Utils.spawnSync(['emscript', 'clean'])
+}

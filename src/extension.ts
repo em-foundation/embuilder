@@ -18,9 +18,10 @@ export async function activate(ctx: Vsc.ExtensionContext) {
         const ws = Vsc.workspace.workspaceFolders?.[0]
         if (!ws) return
 
-        for (let cmd of ["em.build", "em.buildLoad", "em.buildMeta"]) {
-            ctx.subscriptions.push(Vsc.commands.registerCommand(cmd, (uri: Vsc.Uri) => Cmd.build(uri, cmd)))
+        for (let cmd of ['em.build', 'em.buildLoad', 'em.buildMeta']) {
+            ctx.subscriptions.push(Vsc.commands.registerCommand(cmd, (node: ContentView.Node) => Cmd.build(node.uri, cmd)))
         }
+        ctx.subscriptions.push(Vsc.commands.registerCommand('em.clean', Cmd.clean))
 
         await TourMgr.init(ctx)
 
