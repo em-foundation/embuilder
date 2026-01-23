@@ -40,12 +40,56 @@
     "contributes": {
         "commands": [
             {
+                "command": "em.bindBoard",
+                "title": "EM•Browser: Bind Board..."
+            },
+            {
+                "command": "em.bindSetup",
+                "title": "EM•Browser: Bind Setup..."
+            },
+            {
+                "command": "em.build",
+                "title": "EM – Build"
+            },
+            {
+                "command": "em.buildLoad",
+                "title": "EM – Build and Load"
+            },
+            {
+                "command": "em.buildMeta",
+                "title": "EM – Build Meta-Program"
+            },
+            {
+                "command": "em.clean",
+                "title": "EM – Clean Workspace"
+            },
+            {
+                "command": "em.newComposite",
+                "title": "EM – New Composite..."
+            },
+            {
+                "command": "em.newInterface",
+                "title": "EM – New Interface..."
+            },
+            {
+                "command": "em.newModule",
+                "title": "EM – New Module..."
+            },
+            {
+                "command": "em.newProgram",
+                "title": "EM – New Program..."
+            },
+            {
+                "command": "em.newTemplate",
+                "title": "EM – New Template..."
+            },
+            {
                 "command": "embrowser.openReadonly",
-                "title": "EM•Browser: Open Readonly"
+                "title": "Open Readonly"
             },
             {
                 "command": "embrowser.revealInExplorer",
-                "title": "EM•Browser: Reveal in Explorer"
+                "title": "Reveal in Explorer"
             },
             {
                 "command": "em.tour.start",
@@ -77,8 +121,86 @@
                 "icon": "$(home)"
             }
         ],
+        "grammars": [
+            {
+                "language": "em-log",
+                "scopeName": "source.eml",
+                "path": "./syntaxes/EmLog.tmLanguage.json"
+            }
+        ],
+        "languages": [
+            {
+                "id": "em",
+                "aliases": [
+                    "EM•Script",
+                    "EM",
+                    "Em",
+                    "em"
+                ],
+                "extensions": [
+                    ".em.ts"
+                ]
+            },
+            {
+                "id": "em-log",
+                "aliases": [
+                    "EmLog",
+                    "em-log"
+                ],
+                "extensions": [
+                    ".eml"
+                ],
+                "mimetypes": [
+                    "text/x-code-output"
+                ]
+            }
+        ],
         "menus": {
             "commandPalette": [
+                {
+                    "command": "em.build",
+                    "when": "false"
+                },
+                {
+                    "command": "em.buildLoad",
+                    "when": "false"
+                },
+                {
+                    "command": "em.buildMeta",
+                    "when": "false"
+                },
+                {
+                    "command": "em.clean",
+                    "when": "false"
+                },
+                {
+                    "command": "em.newComposite",
+                    "when": "false"
+                },
+                {
+                    "command": "em.newInterface",
+                    "when": "false"
+                },
+                {
+                    "command": "em.newModule",
+                    "when": "false"
+                },
+                {
+                    "command": "em.newProgram",
+                    "when": "false"
+                },
+                {
+                    "command": "em.newTemplate",
+                    "when": "false"
+                },
+                {
+                    "command": "embrowser.openReadonly",
+                    "when": "false"
+                },
+                {
+                    "command": "embrowser.revealInExplorer",
+                    "when": "false"
+                },
                 {
                     "command": "em.tour.start",
                     "when": "false"
@@ -107,8 +229,53 @@
             "view/item/context": [
                 {
                     "command": "embrowser.revealInExplorer",
-                    "when": "view == embrowser.content && viewItem == embrowser.nodeHasUri",
-                    "group": "navigation@10"
+                    "group": "navigation@10",
+                    "when": "view == embrowser.content"
+                },
+                {
+                    "command": "em.build",
+                    "group": "ZZZemscript@2",
+                    "when": "view == embrowser.content && viewItem == embrowser.unit"
+                },
+                {
+                    "command": "em.buildLoad",
+                    "group": "ZZZemscript@2",
+                    "when": "view == embrowser.content && viewItem == embrowser.unit"
+                },
+                {
+                    "command": "em.buildMeta",
+                    "group": "ZZZemscript@2",
+                    "when": "view == embrowser.content && viewItem == embrowser.unit"
+                },
+                {
+                    "command": "em.clean",
+                    "group": "ZZZemscript@2",
+                    "when": "view == embrowser.content && (viewItem == embrowser.build || viewItem == embrowser.workspace)"
+                },
+                {
+                    "command": "em.newComposite",
+                    "group": "ZZYemscript@2",
+                    "when": "view == embrowser.content && viewItem == embrowser.bucket"
+                },
+                {
+                    "command": "em.newInterface",
+                    "group": "ZZYemscript@2",
+                    "when": "view == embrowser.content && viewItem == embrowser.bucket"
+                },
+                {
+                    "command": "em.newModule",
+                    "group": "ZZYemscript@2",
+                    "when": "view == embrowser.content && viewItem == embrowser.bucket"
+                },
+                {
+                    "command": "em.newProgram",
+                    "group": "ZZYemscript@2",
+                    "when": "view == embrowser.content && viewItem == embrowser.bucket"
+                },
+                {
+                    "command": "em.newTemplate",
+                    "group": "ZZYemscript@2",
+                    "when": "view == embrowser.content && viewItem == embrowser.bucket"
                 }
             ],
             "view/title": [

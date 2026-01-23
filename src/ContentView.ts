@@ -1,5 +1,7 @@
 import * as Vsc from 'vscode'
 
+const VscFs = Vsc.workspace.fs
+
 type NodeKind = 'workspace' | 'package' | 'bucket' | 'dir' | 'file' | 'build'
 
 export class Node extends Vsc.TreeItem {
@@ -34,7 +36,7 @@ export class Provider implements Vsc.TreeDataProvider<Node> {
 
     private async readDirs(parent: Vsc.Uri): Promise<string[]> {
         try {
-            const entries = await Vsc.workspace.fs.readDirectory(parent)
+            const entries = await VscFs.readDirectory(parent)
             return entries
                 .filter(([, type]) => (type & Vsc.FileType.Directory) !== 0)
                 .map(([name]) => name)
@@ -45,7 +47,7 @@ export class Provider implements Vsc.TreeDataProvider<Node> {
 
     private async readAll(parent: Vsc.Uri): Promise<Array<{ name: string, type: Vsc.FileType }>> {
         try {
-            const entries = await Vsc.workspace.fs.readDirectory(parent)
+            const entries = await VscFs.readDirectory(parent)
             return entries.map(([name, type]) => ({ name, type }))
         } catch {
             return []
@@ -86,7 +88,7 @@ export class Provider implements Vsc.TreeDataProvider<Node> {
                 Vsc.TreeItemCollapsibleState.Expanded
             )
             item.iconPath = this.icon('icons/workspace.svg')
-            item.contextValue = 'embrowser.nodeHasUri'
+            item.contextValue = 'embrowser.workspace'
             return [item]
         }
 
@@ -98,7 +100,7 @@ export class Provider implements Vsc.TreeDataProvider<Node> {
                 const pkgUri = Vsc.Uri.joinPath(element.uri, name)
                 const item = new Node(kind, pkgUri, name, Vsc.TreeItemCollapsibleState.Collapsed)
                 item.iconPath = this.icon(`icons/${kind}.svg`)
-                item.contextValue = 'embrowser.nodeHasUri'
+                item.contextValue = `embrowser.${kind}`
                 return item
             })
         }
@@ -110,7 +112,7 @@ export class Provider implements Vsc.TreeDataProvider<Node> {
                 const bucketUri = Vsc.Uri.joinPath(element.uri, name)
                 const item = new Node('bucket', bucketUri, name, Vsc.TreeItemCollapsibleState.Collapsed)
                 item.iconPath = this.icon('icons/bucket.svg')
-                item.contextValue = 'embrowser.nodeHasUri'
+                item.contextValue = 'embrowser.bucket'
                 return item
             })
         }
@@ -125,13 +127,13 @@ export class Provider implements Vsc.TreeDataProvider<Node> {
                 if ((type & Vsc.FileType.Directory) !== 0) {
                     const item = new Node('dir', uri, name, Vsc.TreeItemCollapsibleState.Collapsed)
                     item.iconPath = this.icon('icons/folder.svg')
-                    item.contextValue = 'embrowser.nodeHasUri'
+                    item.contextValue = `embrowser.${element.kind}`
                     return item
                 }
 
                 const item = new Node('file', uri, name, Vsc.TreeItemCollapsibleState.None)
                 item.iconPath = this.fileIcon(name)
-                item.contextValue = 'embrowser.nodeHasUri'
+                item.contextValue = (name.endsWith('.em.ts')) ? 'embrowser.unit' : 'embrowser.file'
                 item.command = {
                     command: name.endsWith('.emtour') ? 'em.tour.start' : 'vscode.open',
                     title: '',

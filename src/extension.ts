@@ -1,9 +1,10 @@
 import * as Vsc from 'vscode'
 
+import * as Cmd from './Cmd'
 import * as ContentView from './ContentView'
 import * as SemTok from './SemTok'
+import * as StatusItems from './StatusItems'
 import * as TourMgr from './TourMgr'
-import * as Utils from './Session'
 
 const ASSOCS = {
     '*.em.ts': 'typescript',
@@ -17,7 +18,12 @@ export async function activate(ctx: Vsc.ExtensionContext) {
         const ws = Vsc.workspace.workspaceFolders?.[0]
         if (!ws) return
 
+        for (let cmd of ["em.build", "em.buildLoad", "em.buildMeta"]) {
+            ctx.subscriptions.push(Vsc.commands.registerCommand(cmd, (uri: Vsc.Uri) => Cmd.build(uri, cmd)))
+        }
+
         await TourMgr.init(ctx)
+
         ctx.subscriptions.push(Vsc.commands.registerCommand('em.renderDoc', TourMgr.ViewProvider.render))
         ctx.subscriptions.push(Vsc.commands.registerCommand('em.tour.start', TourMgr.start))
         ctx.subscriptions.push(Vsc.commands.registerCommand('em.tour.end', TourMgr.end))
@@ -25,7 +31,6 @@ export async function activate(ctx: Vsc.ExtensionContext) {
         ctx.subscriptions.push(Vsc.commands.registerCommand('em.tour.prev', TourMgr.prev))
         ctx.subscriptions.push(Vsc.commands.registerCommand('em.tour.refresh', TourMgr.refresh))
         ctx.subscriptions.push(Vsc.commands.registerCommand('em.tour.restart', TourMgr.restart))
-
 
         const view = new ContentView.Provider(ctx.extensionUri)
         ctx.subscriptions.push(
@@ -66,8 +71,10 @@ export async function activate(ctx: Vsc.ExtensionContext) {
         await cfg.update('workbench.colorTheme', 'EM•Script Dark', Vsc.ConfigurationTarget.Workspace)
         await cfg.update('workbench.tree.indent', 20, Vsc.ConfigurationTarget.Workspace)
 
-        const vers = Utils.getVersFull()
-        Vsc.window.showInformationMessage(`EM•Browser activated [ EM•Script version ${vers} ]`)
+        StatusItems.init(ctx)
+        ctx.subscriptions.push(Vsc.commands.registerCommand("em.bindSetup", Cmd.bindSetup))
+
+        Vsc.window.showInformationMessage(`EM•Browser activated`)
 
     } catch (e) {
         console.log('*** EM•Script Browser activate: fail')
