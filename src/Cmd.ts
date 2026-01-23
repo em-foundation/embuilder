@@ -20,10 +20,9 @@ export async function bindSetup(uri?: Vsc.Uri) {
 
 export function build(uri: Vsc.Uri, cid: string) {
     const opt = cid === 'em.buildLoad' ? '--load' : cid === 'em.buildMeta' ? '--meta' : ''
-    const out = Utils.spawnSync(['emscript', 'build', '--unit', Utils.unitPath(uri)])
-    console.log(`*** build: ${out}`)
+    Utils.spawnLog(['emscript', 'build', '--unit', Utils.unitPath(uri)])
 }
 
 export function clean() {
-    const out = Utils.spawnSync(['emscript', 'clean'])
+    Utils.spawnLog(['emscript', 'clean'])
 }

@@ -81,26 +81,25 @@ export class Provider implements Vsc.TreeDataProvider<Node> {
 
         // top-level -> workspace node
         if (!element) {
-            const item = new Node(
-                'workspace',
-                wsUri,
-                'workspace',
-                Vsc.TreeItemCollapsibleState.Expanded
-            )
-            item.iconPath = this.icon('icons/workspace.svg')
+            const item = new Node('workspace', wsUri, 'EM•Script Source', Vsc.TreeItemCollapsibleState.Expanded)
+            item.iconPath = this.icon('icons/source.png')
             item.contextValue = 'embrowser.workspace'
-            return [item]
+            const outUri = Vsc.Uri.joinPath(wsUri, '.emscript')
+            if (!await uriExists(outUri)) return [item]
+            const item2 = new Node('build', outUri, 'EM•Script Output', Vsc.TreeItemCollapsibleState.Collapsed)
+            item2.iconPath = this.icon('icons/output.png')
+            item2.contextValue = 'embrowser.build'
+            return [item, item2]
         }
 
         // workspace -> packages
         if (element.kind === 'workspace') {
             const dirNames = await this.readDirs(element.uri)
-            return dirNames.map((name) => {
-                const kind = (name == '.emscript') ? 'build' : 'package'
+            return dirNames.filter(name => !name.startsWith('.')).map((name) => {
                 const pkgUri = Vsc.Uri.joinPath(element.uri, name)
-                const item = new Node(kind, pkgUri, name, Vsc.TreeItemCollapsibleState.Collapsed)
-                item.iconPath = this.icon(`icons/${kind}.svg`)
-                item.contextValue = `embrowser.${kind}`
+                const item = new Node('package', pkgUri, name, Vsc.TreeItemCollapsibleState.Collapsed)
+                item.iconPath = this.icon('icons/package.svg')
+                item.contextValue = 'embrowser.package'
                 return item
             })
         }
@@ -127,7 +126,7 @@ export class Provider implements Vsc.TreeDataProvider<Node> {
                 if ((type & Vsc.FileType.Directory) !== 0) {
                     const item = new Node('dir', uri, name, Vsc.TreeItemCollapsibleState.Collapsed)
                     item.iconPath = this.icon('icons/folder.svg')
-                    item.contextValue = `embrowser.${element.kind}`
+                    item.contextValue = 'embrowser.dir'
                     return item
                 }
 
@@ -154,5 +153,14 @@ export class Provider implements Vsc.TreeDataProvider<Node> {
         }
 
         return []
+    }
+}
+
+async function uriExists(uri: Vsc.Uri) {
+    try {
+        await VscFs.stat(uri)
+        return true
+    } catch {
+        return false
     }
 }

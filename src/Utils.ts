@@ -6,6 +6,23 @@ const VERS = spawnSync(['emscript', '--version'])
 
 const curPropMap = new Map<string, string>()
 
+const loggerC = new class Logger {
+    readonly output = Vsc.window.createOutputChannel('EM•Script', 'em-log')
+    addBreak = (flag: boolean) => {
+        if (!flag) return
+        this.output.appendLine('----')
+        this.output.show(true)
+    }
+    addErr = async (msg: string) => { this.writeEntry('E', msg) }
+    addInfo = async (msg: string) => { this.writeEntry('I', msg) }
+    private writeEntry = (kind: string, msg: string) => {
+        msg.split('\n').forEach(ln => {
+            if (ln.length) this.output.appendLine(`${(new Date).toISOString()} ${kind}: ${ln.trimEnd()}`)
+        })
+        this.output.show(true)
+    }
+}
+
 export function getProps(): ReadonlyMap<string, string> {
     return curPropMap
 }
@@ -35,6 +52,25 @@ export function rootPath(): string {
 export function rootUri(): Vsc.Uri {
     return ROOT.uri
 }
+
+export function spawnLog(cli: string[]) {
+    const cwd = workPath()
+    const proc = Cp.spawn('npx', cli, {
+        cwd,
+        shell: process.platform === 'win32'
+    })
+    proc.stdout.setEncoding('utf8')
+    proc.stdout.on('data', (data => loggerC.addInfo(data)))
+    proc.stderr.setEncoding('utf8')
+    proc.stderr.on('data', (data => loggerC.addErr(data)))
+    proc.on('close', (stat => {
+        loggerC.addBreak(true)
+    }))
+    proc.on('error', (err) => {
+        loggerC.addErr(err.message)
+    })
+}
+
 
 export function spawnSync(cli: string[]): string {
     const cwd = workPath()
