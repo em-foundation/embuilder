@@ -1,6 +1,12 @@
 import Cp from 'child_process'
 import Vsc from 'vscode'
 
+export const PROP_BOARD = 'em.lang.BoardKind'
+export const PROP_DISTRO = 'em.lang.Distro'
+export const PROP_EXTENDS = 'em.lang.SetupExtends'
+export const PROP_PROG = 'em.lang.Prog'
+export const PROP_REQUIRES = 'em.lang.PackageRequires'
+
 const ROOT = Vsc.workspace.workspaceFolders![0]
 const VERS = spawnSync(['emscript', '--version'])
 
@@ -21,6 +27,10 @@ const loggerC = new class Logger {
         })
         this.output.show(true)
     }
+}
+
+export function getDefaultSetup(): string {
+    return curPropMap.get(PROP_EXTENDS) ?? ''
 }
 
 export function getProps(): ReadonlyMap<string, string> {

@@ -79,7 +79,6 @@ async function readText(uri: Vsc.Uri): Promise<string> {
 }
 
 export async function init(ctx: Vsc.ExtensionContext) {
-    console.log('TourMgr.init')
     curCtx = ctx
     await Vsc.commands.executeCommand(`${ViewProvider.ID}.removeView`)
 }

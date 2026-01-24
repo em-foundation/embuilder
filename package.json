@@ -121,6 +121,21 @@
                 "icon": "$(home)"
             }
         ],
+        "configuration": {
+            "title": "resourceExtname Builder",
+            "properties": {
+                "emscript.board": {
+                    "type": "string",
+                    "default": "",
+                    "description": "Use this board when building"
+                },
+                "emscript.setup": {
+                    "type": "string",
+                    "default": "",
+                    "description": "Use this setup when building"
+                }
+            }
+        },
         "grammars": [
             {
                 "language": "em-log",

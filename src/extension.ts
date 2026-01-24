@@ -5,6 +5,7 @@ import * as ContentView from './ContentView'
 import * as SemTok from './SemTok'
 import * as StatusItems from './StatusItems'
 import * as TourMgr from './TourMgr'
+import * as Utils from './Utils'
 
 const ASSOCS = {
     '*.em.ts': 'typescript',
@@ -13,7 +14,7 @@ const ASSOCS = {
 }
 
 export async function activate(ctx: Vsc.ExtensionContext) {
-    console.log('*** EM•Script Browser activate: begin')
+    console.log('*** activate: begin')
     try {
         const ws = Vsc.workspace.workspaceFolders?.[0]
         if (!ws) return
@@ -70,16 +71,35 @@ export async function activate(ctx: Vsc.ExtensionContext) {
         await cfg.update('workbench.tree.indent', 20, Vsc.ConfigurationTarget.Workspace)
 
         StatusItems.init(ctx)
+        ctx.subscriptions.push(Vsc.commands.registerCommand("em.bindBoard", Cmd.bindBoard))
         ctx.subscriptions.push(Vsc.commands.registerCommand("em.bindSetup", Cmd.bindSetup))
 
         Vsc.window.showInformationMessage(`EM•Browser activated`)
 
+        Utils.refreshProps()
+        const defSetup = Utils.getDefaultSetup();
+        console.log(`*** defSetup = ${defSetup}`)
+        if (defSetup) {
+            await StatusItems.setupC.set(defSetup);
+        } else {
+            let opts: Vsc.MessageOptions = {
+                detail: "Click below to select a tooling setup",
+                modal: true,
+            };
+            await StatusItems.boardC.set('')
+            if (
+                await Vsc.window.showWarningMessage(`EM•Script Setups`, opts, "Select...")
+            ) {
+                await Cmd.bindSetup()
+            }
+        }
+
     } catch (e) {
-        console.log('*** EM•Script Browser activate: fail')
+        console.log('*** activate: fail')
         Vsc.window.showWarningMessage(`embrowser activate failed: ${String(e)}`)
     }
 
-    console.log('*** EM•Script Browser activate: begin')
+    console.log('*** activate: end')
 }
 
 export function deactivate() {

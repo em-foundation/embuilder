@@ -1,6 +1,7 @@
 import Fs from 'fs'
 import Path from 'path'
 import Vsc from 'vscode'
+import Yaml from 'js-yaml'
 
 import * as Utils from './Utils'
 
@@ -53,7 +54,7 @@ abstract class StatusItem {
             lines.unshift(`${this.prop} = ${name}   ${StatusItem.COMMENT}`)
         }
         Fs.writeFileSync(ipath, Buffer.from(lines.join('\n'), 'utf-8'))
-        // refreshProps()  /// TODO
+        Utils.refreshProps()
         this.setAux(name)
     }
     protected setAux(name: string) { }
@@ -62,10 +63,21 @@ abstract class StatusItem {
     }
 }
 
+export const boardC = new class Board extends StatusItem {
+    private static PRE = '$(circuit-board)  '
+    constructor() {
+        super('board', Utils.PROP_BOARD, 'em.bindBoard', 'Board – click to edit', '$(circuit-board) Board', Board.PRE)
+    }
+    pickList(): string[] {
+        return mkBoardNames().map(sn => `${Board.PRE}${sn}`)
+    }
+}
+
+
 export const setupC = new class Setup extends StatusItem {
     private static PRE = '$(gear)  '
     constructor() {
-        super('setup', 'em.lang.SetupExtends', 'em.bindSetup', 'Setup – click to edit', '$(gear) Setup', Setup.PRE)
+        super('setup', Utils.PROP_EXTENDS, 'em.bindSetup', 'Setup – click to edit', '$(gear) Setup', Setup.PRE)
     }
     pickList(): string[] {
         return mkSetupNames().map(sn => `${Setup.PRE}${sn}`)
@@ -73,16 +85,38 @@ export const setupC = new class Setup extends StatusItem {
 }
 
 export function init(ctx: Vsc.ExtensionContext) {
-    let sbi = Vsc.window.createStatusBarItem(Vsc.StatusBarAlignment.Left);
+    let sbi = Vsc.window.createStatusBarItem(Vsc.StatusBarAlignment.Left)
     sbi.text = `$(terminal) EM•Script v${Utils.getVers()}`
     sbi.color = EM_COLOR
-    sbi.show();
-    ctx.subscriptions.push(sbi);
+    sbi.show()
+    ctx.subscriptions.push(sbi)
+    boardC.init()
     setupC.init()
 }
 
+function mkBoardNames(): string[] {
+    let res = new Array<string>()
+    const wpath = Utils.workPath()
+    for (const pn of Fs.readdirSync(wpath)) {
+        const ppath = Path.join(wpath, pn)
+        if (!Fs.statSync(ppath).isDirectory() || pn.startsWith('.')) continue
+        for (const bn of Fs.readdirSync(ppath)) {
+            const bpath = Path.join(ppath, bn, 'em-boards')
+            if (!Fs.existsSync(bpath)) continue
+            const yobj = Yaml.load(String(Fs.readFileSync(bpath))) as Object
+            for (const k of Object.keys(yobj)) {
+                if (k.startsWith('$')) continue
+                res.push(`${bn}://${k}`)
+            }
+        }
+    }
+    res.sort()
+    res.push('<bare-metal>')
+    return res
+}
+
 function mkSetupNames(): string[] {
-    let res = new Array<string>();
+    let res = new Array<string>()
     const wpath = Utils.workPath()
     for (const pn of Fs.readdirSync(wpath)) {
         const ppath = Path.join(wpath, pn)

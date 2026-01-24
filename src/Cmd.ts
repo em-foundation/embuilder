@@ -3,12 +3,12 @@ import * as StatusItems from './StatusItems'
 import * as Utils from './Utils'
 import * as Vsc from 'vscode'
 
-// export async function bindBoard() {
-//     const curName = StatusItems..get()
-//     const newName = await Vsc.window.showQuickPick(Utils.boardC.pickList())
-//     const name = newName ? Utils.boardC.trim(newName) : curName
-//     await Utils.boardC.set(name)
-// }
+export async function bindBoard() {
+    const curName = StatusItems.boardC.get()
+    const newName = await Vsc.window.showQuickPick(StatusItems.boardC.pickList())
+    const name = newName ? StatusItems.boardC.trim(newName) : curName
+    await StatusItems.boardC.set(name)
+}
 
 export async function bindSetup(uri?: Vsc.Uri) {
     const curName = StatusItems.setupC.get()
@@ -23,6 +23,9 @@ export async function build(uri: Vsc.Uri, cid: string) {
     const opt = cid === 'em.buildLoad' ? '--load' : cid === 'em.buildMeta' ? '--meta' : ''
     await Utils.spawnLog(['emscript', 'build', '--unit', Utils.unitPath(uri)])
     ContentView.refresh()
+    if (cid === 'em.buildLoad') {
+        await Vsc.commands.executeCommand('wokwi-vscode.start')
+    }
 }
 
 export async function clean() {
