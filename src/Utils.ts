@@ -33,6 +33,13 @@ export function getDefaultSetup(): string {
     return curPropMap.get(PROP_EXTENDS) ?? ''
 }
 
+export function getDistro(): { package: string, bucket: string } | null {
+    const ds = curPropMap.get(PROP_DISTRO)
+    if (ds == undefined) return null
+    const sa = ds.split('://')
+    return { package: sa[0], bucket: sa[1] }
+}
+
 export function getProps(): ReadonlyMap<string, string> {
     return curPropMap
 }

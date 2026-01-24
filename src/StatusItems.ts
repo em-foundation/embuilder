@@ -69,7 +69,17 @@ export const boardC = new class Board extends StatusItem {
         super('board', Utils.PROP_BOARD, 'em.bindBoard', 'Board – click to edit', '$(circuit-board) Board', Board.PRE)
     }
     pickList(): string[] {
-        return mkBoardNames().map(sn => `${Board.PRE}${sn}`)
+        const distro = Utils.getDistro()
+        if (!distro) return []
+        const file = Path.join(Utils.workPath(), distro.package, distro.bucket, 'em-boards')
+        if (!Fs.existsSync(file)) return []
+        let yobj = Yaml.load(String(Fs.readFileSync(file))) as Object
+        let bset = new Set<string>()
+        Object.keys(yobj).filter(k => !(k.startsWith('$'))).forEach(k => bset.add(`${Board.PRE}${k}`))
+        const res = Array.from(bset.keys()).sort()
+        res.push(`${Board.PRE}<bare-metal>`)
+        return res
+        // return mkBoardNames().map(sn => `${Board.PRE}${sn}`)
     }
 }
 
