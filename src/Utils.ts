@@ -29,6 +29,10 @@ const loggerC = new class Logger {
     }
 }
 
+export function getBoard(): string {
+    return curPropMap.get(PROP_BOARD) ?? ''
+}
+
 export function getDefaultSetup(): string {
     return curPropMap.get(PROP_EXTENDS) ?? ''
 }

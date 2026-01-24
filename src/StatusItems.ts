@@ -92,6 +92,22 @@ export const setupC = new class Setup extends StatusItem {
     pickList(): string[] {
         return mkSetupNames().map(sn => `${Setup.PRE}${sn}`)
     }
+    async setAux(name: string) {
+        console.log(`***setupC setAux: ${name}`)
+        let brd = ''
+        const cur_brd = boardC.get()
+        if (name) {
+            brd = Utils.getBoard()
+            for (const b of boardC.pickList()) {
+                const bn = b.split('  ')[1]
+                if (cur_brd == bn) {
+                    brd = cur_brd
+                    break
+                }
+            }
+        }
+        await boardC.set(brd)
+    }
 }
 
 export function init(ctx: Vsc.ExtensionContext) {
