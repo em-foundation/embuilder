@@ -93,7 +93,6 @@ export const setupC = new class Setup extends StatusItem {
         return mkSetupNames().map(sn => `${Setup.PRE}${sn}`)
     }
     async setAux(name: string) {
-        console.log(`***setupC setAux: ${name}`)
         let brd = ''
         const cur_brd = boardC.get()
         if (name) {

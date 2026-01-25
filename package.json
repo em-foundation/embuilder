@@ -104,6 +104,11 @@
                 "title": "Reveal in Explorer"
             },
             {
+                "command": "embrowser.revealActiveUnit",
+                "title": "EM•Browser: Reveal Active Unit",
+                "icon": "$(target)"
+            },
+            {
                 "command": "em.tour.start",
                 "title": "EM•Browser: Start Tour"
             },
@@ -268,71 +273,76 @@
             "view/item/context": [
                 {
                     "command": "embrowser.revealInExplorer",
-                    "group": "navigation@10",
+                    "group": "ZZZnavigation@10",
                     "when": "view == embrowser.content"
                 },
                 {
                     "command": "embrowser.remove",
-                    "group": "navigation@10",
+                    "group": "ZZZnavigation@10",
                     "when": "view == embrowser.content && (viewItem == embrowser.unit || viewItem == embrowser.bucket || viewItem == embrowser.package)"
                 },
                 {
                     "command": "em.build",
-                    "group": "ZZZemscript@2",
+                    "group": "AAAemscript@2",
                     "when": "view == embrowser.content && viewItem == embrowser.unit"
                 },
                 {
                     "command": "em.buildLoad",
-                    "group": "ZZZemscript@2",
+                    "group": "AAAemscript@2",
                     "when": "view == embrowser.content && viewItem == embrowser.unit"
                 },
                 {
                     "command": "em.buildMeta",
-                    "group": "ZZZemscript@2",
+                    "group": "AAAemscript@2",
                     "when": "view == embrowser.content && viewItem == embrowser.unit"
                 },
                 {
                     "command": "em.clean",
-                    "group": "ZZZemscript@2",
+                    "group": "AAAemscript@2",
                     "when": "view == embrowser.content && viewItem == embrowser.build"
                 },
                 {
                     "command": "em.newBucket",
-                    "group": "ZZYemscript@2",
+                    "group": "AAAemscript@2",
                     "when": "view == embrowser.content && viewItem == embrowser.package"
                 },
                 {
                     "command": "em.newComposite",
-                    "group": "ZZYemscript@2",
+                    "group": "AAAemscript@2",
                     "when": "view == embrowser.content && viewItem == embrowser.bucket"
                 },
                 {
                     "command": "em.newInterface",
-                    "group": "ZZYemscript@2",
+                    "group": "AAAemscript@2",
                     "when": "view == embrowser.content && viewItem == embrowser.bucket"
                 },
                 {
                     "command": "em.newModule",
-                    "group": "ZZYemscript@2",
+                    "group": "AAAemscript@2",
                     "when": "view == embrowser.content && viewItem == embrowser.bucket"
                 },
                 {
                     "command": "em.newPackage",
-                    "group": "ZZYemscript@2",
+                    "group": "AAAemscript@2",
                     "when": "view == embrowser.content && viewItem == embrowser.workspace"
                 },
                 {
                     "command": "em.newProgram",
-                    "group": "ZZYemscript@2",
+                    "group": "AAAemscript@2",
                     "when": "view == embrowser.content && viewItem == embrowser.bucket"
                 },
                 {
                     "command": "em.newTemplate",
-                    "group": "ZZYemscript@2",
+                    "group": "AAAemscript@2",
                     "when": "view == embrowser.content && viewItem == embrowser.bucket"
                 }
             ],
             "view/title": [
+                {
+                    "command": "embrowser.revealActiveUnit",
+                    "when": "view == embrowser.content",
+                    "group": "navigation@1"
+                },
                 {
                     "command": "em.tour.prev",
                     "when": "view == em.toursView",

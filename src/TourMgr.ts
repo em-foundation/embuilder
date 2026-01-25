@@ -154,9 +154,7 @@ export async function start(uri: Vsc.Uri) {
         curCtx.subscriptions.push(Vsc.window.registerWebviewViewProvider(ViewProvider.ID, new ViewProvider(curCtx)))
     }
     Vsc.commands.executeCommand('setContext', 'em-builder.activeTour', true)
-    console.log('*** before focus')
     await Vsc.commands.executeCommand(`${ViewProvider.ID}.focus`)
-    console.log('*** after focus')
 
     let src = await readText(uri)
     curTour = Yaml.load(src) as Tour

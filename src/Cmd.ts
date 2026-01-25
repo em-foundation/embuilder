@@ -124,6 +124,20 @@ export async function remove(node: ContentView.Node) {
     ContentView.refresh()
 }
 
-export async function reveal(node: ContentView.Node) {
+export async function revealUnit() {
+    const uri = Vsc.window.activeTextEditor?.document.uri
+    if (!uri || !uri.path.endsWith('.em.ts')) return
+    const segs = uri.path.split('/')
+    ContentView.refresh()
+    let u = Utils.workUri()
+    for (const seg of segs.slice(segs.length - 3)) {
+        u = Vsc.Uri.joinPath(u, seg)
+        const n = ContentView.getNode(u)!
+        ContentView.refresh(n)
+        await ContentView.reveal(n)
+    }
+}
+
+export async function revealExplorer(node: ContentView.Node) {
     await Vsc.commands.executeCommand('revealInExplorer', node.uri)
 }

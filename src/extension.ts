@@ -31,15 +31,16 @@ export async function activate(ctx: Vsc.ExtensionContext) {
         ctx.subscriptions.push(Vsc.commands.registerCommand('em.tour.next', TourMgr.next))
         ctx.subscriptions.push(Vsc.commands.registerCommand('em.tour.prev', TourMgr.prev))
         ctx.subscriptions.push(Vsc.commands.registerCommand('em.tour.refresh', TourMgr.refresh))
-        ctx.subscriptions.push(Vsc.commands.registerCommand('em.tour.restart', TourMgr.restart))
 
+        ctx.subscriptions.push(Vsc.commands.registerCommand('em.tour.restart', TourMgr.restart))
         ContentView.init(ctx)
         await Vsc.commands.executeCommand('embrowser.content.focus')
         await Vsc.commands.executeCommand('workbench.view.extension.embrowser')
 
+        ctx.subscriptions.push(Vsc.commands.registerCommand('embrowser.revealActiveUnit', Cmd.revealUnit))
         ctx.subscriptions.push(
             Vsc.commands.registerCommand('embrowser.revealInExplorer', async (node: ContentView.Node) => {
-                await Cmd.reveal(node)
+                await Cmd.revealExplorer(node)
             })
         )
         ctx.subscriptions.push(
@@ -101,7 +102,6 @@ export async function activate(ctx: Vsc.ExtensionContext) {
 
         Utils.refreshProps()
         const defSetup = Utils.getDefaultSetup();
-        console.log(`*** defSetup = ${defSetup}`)
         if (defSetup) {
             await StatusItems.setupC.set(defSetup);
         } else {

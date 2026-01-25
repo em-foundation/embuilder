@@ -5,6 +5,7 @@ const VscFs = Vsc.workspace.fs
 type NodeKind = 'workspace' | 'package' | 'bucket' | 'dir' | 'file' | 'build'
 
 let curNodeMap = new Map<string, Node>()
+let curRoot: Node | null = null
 let curView: Provider
 let curTree: Vsc.TreeView<Node>
 
@@ -17,7 +18,6 @@ export function init(ctx: Vsc.ExtensionContext) {
     curTree = Vsc.window.createTreeView('embrowser.content', {
         treeDataProvider: curView
     })
-
     ctx.subscriptions.push(curTree)
 }
 
@@ -25,8 +25,9 @@ export function refresh(node?: Node) {
     curView.refresh(node)
 }
 
-export async function reveal(node: Node) {
-    await curTree.reveal(node, { select: true, focus: true, expand: true })
+export async function reveal(node?: Node) {
+    const n = node ?? curRoot!
+    await curTree.reveal(n, { select: true, focus: true, expand: true })
 }
 
 export class Node extends Vsc.TreeItem {
@@ -40,6 +41,7 @@ export class Node extends Vsc.TreeItem {
         super(label, collapsibleState)
         if (kind == 'workspace') {
             curNodeMap.clear()
+            if (!curRoot) curRoot = this
         }
         curNodeMap.set(uri.path, this)
     }
