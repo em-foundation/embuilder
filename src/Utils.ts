@@ -1,4 +1,6 @@
 import Cp from 'child_process'
+import Fs from 'fs'
+import Path from 'path'
 import Vsc from 'vscode'
 
 export const PROP_BOARD = 'em.lang.BoardKind'
@@ -55,6 +57,42 @@ export function getVers(): string {
 export function getVersFull(): string {
     return VERS
 }
+
+export async function newContainer(uri: Vsc.Uri, cks: string) {
+    let cname = await Vsc.window.showInputBox({ placeHolder: `${cks} name` })
+    if (!cname) return
+    if (!(cname.match(/^\w(\w|\d|\.)*$/))) {
+        Vsc.window.showErrorMessage(`'${cname}' is not a valid identifier`)
+        return
+    }
+    let ppath = uri.fsPath
+    let cpath = Path.join(ppath, cname)
+    let pname = Path.basename(ppath)
+    if (Fs.existsSync(cpath)) {
+        Vsc.window.showErrorMessage(`${cks} '${cname}' already exists`)
+        return
+    }
+    Fs.mkdirSync(cpath)
+}
+
+export async function newUnit(uri: Vsc.Uri, uks: string, content: string) {
+    let uname = await Vsc.window.showInputBox({ placeHolder: `${uks} name` })
+    if (!uname) return
+    if (!(uname.match(/^\w(\w|\d)*$/))) {
+        Vsc.window.showErrorMessage(`'${uname}' is not a valid identifier`)
+        return
+    }
+    let ppath = uri.fsPath
+    let upath = Path.join(ppath, `${uname}.em.ts`)
+    let pname = Path.basename(ppath)
+    if (Fs.existsSync(upath)) {
+        Vsc.window.showErrorMessage(`unit '${pname}/${uname}' already exists`)
+        return
+    }
+    Fs.writeFileSync(upath, content)
+    Vsc.commands.executeCommand('vscode.open', Vsc.Uri.file(upath), { preview: true })
+}
+
 
 export function refreshProps() {
     const lines = spawnSync(['emscript', 'properties']).split('\n')

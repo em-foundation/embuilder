@@ -3,6 +3,56 @@ import * as StatusItems from './StatusItems'
 import * as Utils from './Utils'
 import * as Vsc from 'vscode'
 
+const UNIT_CONTENT = new Map<string, string>([
+    ['Composite', `
+import '@$$emscript'
+export const $U = $declare('COMPOSITE')
+
+`   ],
+    ['Interface', `
+import '@$$emscript'
+export const $U = $declare('INTERFACE')
+
+export interface em$meta { }
+
+export interface $I {
+    em$meta: em$meta
+}
+`   ],
+    ['Module', `
+import '@$$emscript'
+export const $U = $declare('MODULE')
+
+export namespace em$meta { }
+
+//>> ---- em$targ ---- <<//
+`   ],
+    ['Program', `
+import '@$$emscript'
+export const $U = $declare('MODULE')
+
+export namespace em$meta { }
+
+//>> ---- em$targ ---- <<//
+
+export function em$run() {
+    halt()
+}
+`   ],
+    ['Template', `
+import '@$$emscript'
+export const $T = $declare('TEMPLATE')
+
+export namespace em$template {
+    export const $U = $declare('MODULE')
+
+    namespace em$meta { }
+}
+
+export function $clone() { return { $T, ...em$template } }
+`   ],
+])
+
 export async function bindBoard() {
     const curName = StatusItems.boardC.get()
     const newName = await Vsc.window.showQuickPick(StatusItems.boardC.pickList())
@@ -24,11 +74,48 @@ export async function build(uri: Vsc.Uri, cid: string) {
     await Utils.spawnLog(['emscript', 'build', '--unit', Utils.unitPath(uri)])
     ContentView.refresh()
     if (cid === 'em.buildLoad') {
-        await Vsc.commands.executeCommand('wokwi-vscode.start')
+        await Vsc.commands.executeCommand('wokwi-vscode.start') // TODO: only for "simulated" boards
     }
 }
 
 export async function clean() {
     await Utils.spawnLog(['emscript', 'clean'])
     ContentView.refresh()
+}
+
+export async function newContainer(uri: Vsc.Uri, cks: string) {
+    await Utils.newContainer(uri, cks)
+    ContentView.refresh()
+}
+
+export async function newUnit(uri: Vsc.Uri, uks: string) {
+    const content = UNIT_CONTENT.get(uks)!
+    await Utils.newUnit(uri, uks, content.trim() + '\n')
+    ContentView.refresh()
+}
+
+export async function remove(node: ContentView.Node) {
+    const ok = await Vsc.window.showWarningMessage(
+        `Permanently remove '${node.label}'?`,
+        { modal: true },
+        'Remove'
+    )
+    if (ok !== 'Remove') return
+
+    const rem = node.uri.toString()
+
+    for (const ed of Vsc.window.visibleTextEditors) {
+        const u = ed.document.uri.toString()
+        if (u === rem || u.startsWith(rem + '/')) {
+            await Vsc.window.showTextDocument(ed.document, ed.viewColumn)
+            await Vsc.commands.executeCommand('workbench.action.closeActiveEditor')
+        }
+    }
+
+    await Vsc.workspace.fs.delete(node.uri, { recursive: true })
+    ContentView.refresh()
+}
+
+export async function reveal(node: ContentView.Node) {
+    await Vsc.commands.executeCommand('revealInExplorer', node.uri)
 }

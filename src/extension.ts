@@ -19,13 +19,12 @@ export async function activate(ctx: Vsc.ExtensionContext) {
         const ws = Vsc.workspace.workspaceFolders?.[0]
         if (!ws) return
 
-        for (let cmd of ['em.build', 'em.buildLoad', 'em.buildMeta']) {
+        for (const cmd of ['em.build', 'em.buildLoad', 'em.buildMeta']) {
             ctx.subscriptions.push(Vsc.commands.registerCommand(cmd, (node: ContentView.Node) => Cmd.build(node.uri, cmd)))
         }
         ctx.subscriptions.push(Vsc.commands.registerCommand('em.clean', Cmd.clean))
 
         await TourMgr.init(ctx)
-
         ctx.subscriptions.push(Vsc.commands.registerCommand('em.renderDoc', TourMgr.ViewProvider.render))
         ctx.subscriptions.push(Vsc.commands.registerCommand('em.tour.start', TourMgr.start))
         ctx.subscriptions.push(Vsc.commands.registerCommand('em.tour.end', TourMgr.end))
@@ -40,8 +39,32 @@ export async function activate(ctx: Vsc.ExtensionContext) {
 
         ctx.subscriptions.push(
             Vsc.commands.registerCommand('embrowser.revealInExplorer', async (node: ContentView.Node) => {
-                if (node?.uri) await Vsc.commands.executeCommand('revealInExplorer', node.uri)
+                await Cmd.reveal(node)
             })
+        )
+        ctx.subscriptions.push(
+            Vsc.commands.registerCommand('embrowser.remove', async (node: ContentView.Node) => {
+                await Cmd.remove(node)
+            })
+        )
+
+        for (const cks of ['Bucket', 'Package']) {
+            Vsc.commands.registerCommand(`em.new${cks}`, async (node: ContentView.Node) => {
+                if (node?.uri) await Cmd.newContainer(node.uri, cks)
+            })
+        }
+
+        for (const uks of ['Composite', 'Interface', 'Module', 'Program', 'Template']) {
+            Vsc.commands.registerCommand(`em.new${uks}`, async (node: ContentView.Node) => {
+                if (node?.uri) await Cmd.newUnit(node.uri, uks)
+            })
+        }
+
+        const watcher = Vsc.workspace.createFileSystemWatcher(new Vsc.RelativePattern(Utils.rootUri(), 'workspace/**/*'))
+        ctx.subscriptions.push(
+            watcher,
+            watcher.onDidCreate(() => ContentView.refresh()),
+            watcher.onDidDelete(() => ContentView.refresh()),
         )
 
         ctx.subscriptions.push(

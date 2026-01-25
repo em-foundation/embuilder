@@ -64,6 +64,10 @@
                 "title": "EM – Clean Workspace"
             },
             {
+                "command": "em.newBucket",
+                "title": "EM – New Bucket..."
+            },
+            {
                 "command": "em.newComposite",
                 "title": "EM – New Composite..."
             },
@@ -76,6 +80,10 @@
                 "title": "EM – New Module..."
             },
             {
+                "command": "em.newPackage",
+                "title": "EM – New Package..."
+            },
+            {
                 "command": "em.newProgram",
                 "title": "EM – New Program..."
             },
@@ -86,6 +94,10 @@
             {
                 "command": "embrowser.openReadonly",
                 "title": "Open Readonly"
+            },
+            {
+                "command": "embrowser.remove",
+                "title": "Remove"
             },
             {
                 "command": "embrowser.revealInExplorer",
@@ -189,6 +201,10 @@
                     "when": "false"
                 },
                 {
+                    "command": "em.newBucket",
+                    "when": "false"
+                },
+                {
                     "command": "em.newComposite",
                     "when": "false"
                 },
@@ -198,6 +214,10 @@
                 },
                 {
                     "command": "em.newModule",
+                    "when": "false"
+                },
+                {
+                    "command": "em.newPackage",
                     "when": "false"
                 },
                 {
@@ -214,6 +234,10 @@
                 },
                 {
                     "command": "embrowser.revealInExplorer",
+                    "when": "false"
+                },
+                {
+                    "command": "embrowser.remove",
                     "when": "false"
                 },
                 {
@@ -248,6 +272,11 @@
                     "when": "view == embrowser.content"
                 },
                 {
+                    "command": "embrowser.remove",
+                    "group": "navigation@10",
+                    "when": "view == embrowser.content && (viewItem == embrowser.unit || viewItem == embrowser.bucket || viewItem == embrowser.package)"
+                },
+                {
                     "command": "em.build",
                     "group": "ZZZemscript@2",
                     "when": "view == embrowser.content && viewItem == embrowser.unit"
@@ -265,7 +294,12 @@
                 {
                     "command": "em.clean",
                     "group": "ZZZemscript@2",
-                    "when": "view == embrowser.content && (viewItem == embrowser.build || viewItem == embrowser.workspace)"
+                    "when": "view == embrowser.content && viewItem == embrowser.build"
+                },
+                {
+                    "command": "em.newBucket",
+                    "group": "ZZYemscript@2",
+                    "when": "view == embrowser.content && viewItem == embrowser.package"
                 },
                 {
                     "command": "em.newComposite",
@@ -281,6 +315,11 @@
                     "command": "em.newModule",
                     "group": "ZZYemscript@2",
                     "when": "view == embrowser.content && viewItem == embrowser.bucket"
+                },
+                {
+                    "command": "em.newPackage",
+                    "group": "ZZYemscript@2",
+                    "when": "view == embrowser.content && viewItem == embrowser.workspace"
                 },
                 {
                     "command": "em.newProgram",
