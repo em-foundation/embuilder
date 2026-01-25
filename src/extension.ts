@@ -37,6 +37,7 @@ export async function activate(ctx: Vsc.ExtensionContext) {
         await Vsc.commands.executeCommand('embrowser.content.focus')
         await Vsc.commands.executeCommand('workbench.view.extension.embrowser')
 
+        ctx.subscriptions.push(Vsc.commands.registerCommand('embrowser.build', Cmd.build))
         ctx.subscriptions.push(Vsc.commands.registerCommand('embrowser.revealActiveUnit', Cmd.revealUnit))
         ctx.subscriptions.push(
             Vsc.commands.registerCommand('embrowser.revealInExplorer', async (node: ContentView.Node) => {

@@ -69,7 +69,12 @@ export async function bindSetup(uri?: Vsc.Uri) {
     // Utils.updateConfig()
 }
 
-export async function build(uri: Vsc.Uri, cid: string) {
+export async function build(uri?: Vsc.Uri, cid?: string) {
+    if (cid === undefined) {
+        uri = Vsc.window.activeTextEditor?.document.uri
+        cid = 'em.buildLoad'
+    }
+    if (!uri || !uri.path.endsWith('.em.ts')) return
     const opt = cid === 'em.buildLoad' ? '--load' : cid === 'em.buildMeta' ? '--meta' : ''
     await Utils.spawnLog(['emscript', 'build', '--unit', Utils.unitPath(uri)])
     ContentView.refresh()

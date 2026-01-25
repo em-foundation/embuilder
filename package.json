@@ -92,6 +92,11 @@
                 "title": "EM – New Template..."
             },
             {
+                "command": "embrowser.build",
+                "title": "EM – Build and Load",
+                "icon": "$(build)"
+            },
+            {
                 "command": "embrowser.openReadonly",
                 "title": "Open Readonly"
             },
@@ -105,7 +110,7 @@
             },
             {
                 "command": "embrowser.revealActiveUnit",
-                "title": "EM•Browser: Reveal Active Unit",
+                "title": "Reveal Active Unit",
                 "icon": "$(target)"
             },
             {
@@ -338,6 +343,11 @@
                 }
             ],
             "view/title": [
+                {
+                    "command": "embrowser.build",
+                    "when": "view == embrowser.content",
+                    "group": "navigation@1"
+                },
                 {
                     "command": "embrowser.revealActiveUnit",
                     "when": "view == embrowser.content",
