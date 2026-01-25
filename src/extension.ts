@@ -50,13 +50,13 @@ export async function activate(ctx: Vsc.ExtensionContext) {
 
         for (const cks of ['Bucket', 'Package']) {
             Vsc.commands.registerCommand(`em.new${cks}`, async (node: ContentView.Node) => {
-                if (node?.uri) await Cmd.newContainer(node.uri, cks)
+                if (node?.uri) await Cmd.newContainer(node, cks)
             })
         }
 
         for (const uks of ['Composite', 'Interface', 'Module', 'Program', 'Template']) {
             Vsc.commands.registerCommand(`em.new${uks}`, async (node: ContentView.Node) => {
-                if (node?.uri) await Cmd.newUnit(node.uri, uks)
+                if (node?.uri) await Cmd.newUnit(node, uks)
             })
         }
 

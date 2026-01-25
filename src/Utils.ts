@@ -58,41 +58,41 @@ export function getVersFull(): string {
     return VERS
 }
 
-export async function newContainer(uri: Vsc.Uri, cks: string) {
-    let cname = await Vsc.window.showInputBox({ placeHolder: `${cks} name` })
-    if (!cname) return
+export async function newContainer(uri: Vsc.Uri, cks: string): Promise<Vsc.Uri | null> {
+    const cname = await Vsc.window.showInputBox({ placeHolder: `${cks} name` })
+    if (!cname) return null
     if (!(cname.match(/^\w(\w|\d|\.)*$/))) {
         Vsc.window.showErrorMessage(`'${cname}' is not a valid identifier`)
-        return
+        return null
     }
-    let ppath = uri.fsPath
-    let cpath = Path.join(ppath, cname)
-    let pname = Path.basename(ppath)
+    const ppath = uri.fsPath
+    const cpath = Path.join(ppath, cname)
     if (Fs.existsSync(cpath)) {
         Vsc.window.showErrorMessage(`${cks} '${cname}' already exists`)
-        return
+        return null
     }
     Fs.mkdirSync(cpath)
+    return Vsc.Uri.joinPath(uri, cname)
 }
 
-export async function newUnit(uri: Vsc.Uri, uks: string, content: string) {
+export async function newUnit(uri: Vsc.Uri, uks: string, content: string): Promise<Vsc.Uri | null> {
     let uname = await Vsc.window.showInputBox({ placeHolder: `${uks} name` })
-    if (!uname) return
+    if (!uname) return null
     if (!(uname.match(/^\w(\w|\d)*$/))) {
         Vsc.window.showErrorMessage(`'${uname}' is not a valid identifier`)
-        return
+        return null
     }
     let ppath = uri.fsPath
     let upath = Path.join(ppath, `${uname}.em.ts`)
     let pname = Path.basename(ppath)
     if (Fs.existsSync(upath)) {
         Vsc.window.showErrorMessage(`unit '${pname}/${uname}' already exists`)
-        return
+        return null
     }
     Fs.writeFileSync(upath, content)
     Vsc.commands.executeCommand('vscode.open', Vsc.Uri.file(upath), { preview: true })
+    return Vsc.Uri.joinPath(uri, `${uname}.em.ts`)
 }
-
 
 export function refreshProps() {
     const lines = spawnSync(['emscript', 'properties']).split('\n')

@@ -4,25 +4,44 @@ const VscFs = Vsc.workspace.fs
 
 type NodeKind = 'workspace' | 'package' | 'bucket' | 'dir' | 'file' | 'build'
 
+let curNodeMap = new Map<string, Node>()
 let curView: Provider
+let curTree: Vsc.TreeView<Node>
+
+export function getNode(uri: Vsc.Uri): Node | undefined {
+    return curNodeMap.get(uri.path)
+}
 
 export function init(ctx: Vsc.ExtensionContext) {
     curView = new Provider(ctx.extensionUri)
-    ctx.subscriptions.push(Vsc.window.registerTreeDataProvider('embrowser.content', curView))
+    curTree = Vsc.window.createTreeView('embrowser.content', {
+        treeDataProvider: curView
+    })
+
+    ctx.subscriptions.push(curTree)
 }
 
-export function refresh() {
-    curView.refresh()
+export function refresh(node?: Node) {
+    curView.refresh(node)
+}
+
+export async function reveal(node: Node) {
+    await curTree.reveal(node, { select: true, focus: true, expand: true })
 }
 
 export class Node extends Vsc.TreeItem {
     constructor(
+        public readonly parent: Node | null,
         public readonly kind: NodeKind,
         public readonly uri: Vsc.Uri,
         label: string,
         collapsibleState: Vsc.TreeItemCollapsibleState
     ) {
         super(label, collapsibleState)
+        if (kind == 'workspace') {
+            curNodeMap.clear()
+        }
+        curNodeMap.set(uri.path, this)
     }
 }
 
@@ -33,8 +52,12 @@ export class Provider implements Vsc.TreeDataProvider<Node> {
 
     constructor(private readonly extUri: Vsc.Uri) { }
 
-    refresh(): void {
-        this._onDidChangeTreeData.fire(undefined)
+    refresh(node?: Node): void {
+        this._onDidChangeTreeData.fire(node)
+    }
+
+    getParent(element: Node): Node | undefined {
+        return element.parent ?? undefined
     }
 
     getTreeItem(element: Node): Vsc.TreeItem {
@@ -93,12 +116,12 @@ export class Provider implements Vsc.TreeDataProvider<Node> {
 
         // top-level -> workspace node
         if (!element) {
-            const item = new Node('workspace', wsUri, 'EM•Script Source', Vsc.TreeItemCollapsibleState.Expanded)
+            const item = new Node(null, 'workspace', wsUri, 'EM•Script Source', Vsc.TreeItemCollapsibleState.Expanded)
             item.iconPath = this.icon('icons/source.png')
             item.contextValue = 'embrowser.workspace'
             const outUri = Vsc.Uri.joinPath(wsUri, '.emscript')
             if (!await uriExists(outUri)) return [item]
-            const item2 = new Node('build', outUri, 'EM•Script Output', Vsc.TreeItemCollapsibleState.Collapsed)
+            const item2 = new Node(null, 'build', outUri, 'EM•Script Output', Vsc.TreeItemCollapsibleState.Collapsed)
             item2.iconPath = this.icon('icons/output.png')
             item2.contextValue = 'embrowser.build'
             return [item, item2]
@@ -109,7 +132,7 @@ export class Provider implements Vsc.TreeDataProvider<Node> {
             const dirNames = await this.readDirs(element.uri)
             return dirNames.filter(name => !name.startsWith('.')).map((name) => {
                 const pkgUri = Vsc.Uri.joinPath(element.uri, name)
-                const item = new Node('package', pkgUri, name, Vsc.TreeItemCollapsibleState.Collapsed)
+                const item = new Node(element, 'package', pkgUri, name, Vsc.TreeItemCollapsibleState.Collapsed)
                 item.iconPath = this.icon('icons/package.svg')
                 item.contextValue = 'embrowser.package'
                 return item
@@ -121,7 +144,7 @@ export class Provider implements Vsc.TreeDataProvider<Node> {
             const dirNames = await this.readDirs(element.uri)
             return dirNames.map((name) => {
                 const bucketUri = Vsc.Uri.joinPath(element.uri, name)
-                const item = new Node('bucket', bucketUri, name, Vsc.TreeItemCollapsibleState.Collapsed)
+                const item = new Node(element, 'bucket', bucketUri, name, Vsc.TreeItemCollapsibleState.Collapsed)
                 item.iconPath = this.icon('icons/bucket.svg')
                 item.contextValue = 'embrowser.bucket'
                 return item
@@ -136,13 +159,13 @@ export class Provider implements Vsc.TreeDataProvider<Node> {
                 const uri = Vsc.Uri.joinPath(element.uri, name)
 
                 if ((type & Vsc.FileType.Directory) !== 0) {
-                    const item = new Node('dir', uri, name, Vsc.TreeItemCollapsibleState.Collapsed)
+                    const item = new Node(element, 'dir', uri, name, Vsc.TreeItemCollapsibleState.Collapsed)
                     item.iconPath = this.icon('icons/folder.svg')
                     item.contextValue = 'embrowser.dir'
                     return item
                 }
 
-                const item = new Node('file', uri, name, Vsc.TreeItemCollapsibleState.None)
+                const item = new Node(element, 'file', uri, name, Vsc.TreeItemCollapsibleState.None)
                 item.iconPath = this.fileIcon(name)
                 item.contextValue = (name.endsWith('.em.ts')) ? 'embrowser.unit' : 'embrowser.file'
                 item.command = {

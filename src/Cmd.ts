@@ -83,15 +83,23 @@ export async function clean() {
     ContentView.refresh()
 }
 
-export async function newContainer(uri: Vsc.Uri, cks: string) {
-    await Utils.newContainer(uri, cks)
-    ContentView.refresh()
+export async function newContainer(node: ContentView.Node, cks: string) {
+    const newuri = await Utils.newContainer(node.uri, cks)
+    if (!newuri) return
+    ContentView.refresh(node)
+    await ContentView.reveal(node)
+    const newnode = ContentView.getNode(newuri)!
+    await ContentView.reveal(newnode)
 }
 
-export async function newUnit(uri: Vsc.Uri, uks: string) {
+export async function newUnit(node: ContentView.Node, uks: string) {
     const content = UNIT_CONTENT.get(uks)!
-    await Utils.newUnit(uri, uks, content.trim() + '\n')
-    ContentView.refresh()
+    const newuri = await Utils.newUnit(node.uri, uks, content.trim() + '\n')
+    if (!newuri) return
+    ContentView.refresh(node)
+    await ContentView.reveal(node)
+    const newnode = ContentView.getNode(newuri)!
+    await ContentView.reveal(newnode)
 }
 
 export async function remove(node: ContentView.Node) {
