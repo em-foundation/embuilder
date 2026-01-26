@@ -242,7 +242,7 @@ function monitor() {
 
 export class ViewProvider implements Vsc.WebviewViewProvider {
 
-    static readonly ID: string = 'em.toursView'
+    static readonly ID: string = 'em.tourGuide'
 
     private static curCtx: Vsc.ExtensionContext
     private static curView: Vsc.Webview

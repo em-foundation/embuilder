@@ -4,7 +4,8 @@ import * as Cmd from './Cmd'
 import * as ContentView from './ContentView'
 import * as SemTok from './SemTok'
 import * as StatusItems from './StatusItems'
-import * as TourMgr from './TourMgr'
+import * as TourGuide from './TourGuide'
+import * as ToursView from './ToursView'
 import * as Utils from './Utils'
 
 const ASSOCS = {
@@ -24,18 +25,20 @@ export async function activate(ctx: Vsc.ExtensionContext) {
         }
         ctx.subscriptions.push(Vsc.commands.registerCommand('em.clean', Cmd.clean))
 
-        await TourMgr.init(ctx)
-        ctx.subscriptions.push(Vsc.commands.registerCommand('em.renderDoc', TourMgr.ViewProvider.render))
-        ctx.subscriptions.push(Vsc.commands.registerCommand('em.tour.start', TourMgr.start))
-        ctx.subscriptions.push(Vsc.commands.registerCommand('em.tour.end', TourMgr.end))
-        ctx.subscriptions.push(Vsc.commands.registerCommand('em.tour.next', TourMgr.next))
-        ctx.subscriptions.push(Vsc.commands.registerCommand('em.tour.prev', TourMgr.prev))
-        ctx.subscriptions.push(Vsc.commands.registerCommand('em.tour.refresh', TourMgr.refresh))
+        await TourGuide.init(ctx)
+        ctx.subscriptions.push(Vsc.commands.registerCommand('em.renderDoc', TourGuide.ViewProvider.render))
+        ctx.subscriptions.push(Vsc.commands.registerCommand('em.tour.start', TourGuide.start))
+        ctx.subscriptions.push(Vsc.commands.registerCommand('em.tour.end', TourGuide.end))
+        ctx.subscriptions.push(Vsc.commands.registerCommand('em.tour.next', TourGuide.next))
+        ctx.subscriptions.push(Vsc.commands.registerCommand('em.tour.prev', TourGuide.prev))
+        ctx.subscriptions.push(Vsc.commands.registerCommand('em.tour.refresh', TourGuide.refresh))
+        ctx.subscriptions.push(Vsc.commands.registerCommand('em.tour.restart', TourGuide.restart))
 
-        ctx.subscriptions.push(Vsc.commands.registerCommand('em.tour.restart', TourMgr.restart))
         ContentView.init(ctx)
         await Vsc.commands.executeCommand('embrowser.content.focus')
         await Vsc.commands.executeCommand('workbench.view.extension.embrowser')
+
+        ToursView.init(ctx)
 
         ctx.subscriptions.push(Vsc.commands.registerCommand('embrowser.build', Cmd.build))
         ctx.subscriptions.push(Vsc.commands.registerCommand('embrowser.revealActiveUnit', Cmd.revealUnit))

@@ -171,7 +171,7 @@ export class Provider implements Vsc.TreeDataProvider<Node> {
                 item.iconPath = this.fileIcon(name)
                 item.contextValue = (name.endsWith('.em.ts')) ? 'embrowser.unit' : 'embrowser.file'
                 item.command = {
-                    command: name.endsWith('.emtour') ? 'em.tour.start' : 'vscode.open',
+                    command: 'vscode.open',
                     title: '',
                     arguments: [uri]
                 }
