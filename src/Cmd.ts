@@ -86,6 +86,7 @@ export async function build(uri?: Vsc.Uri, cid?: string) {
 export async function clean() {
     await Utils.spawnLog(['emscript', 'clean'])
     ContentView.refresh()
+    await Vsc.commands.executeCommand('typescript.restartTsServer')
 }
 
 export async function newContainer(node: ContentView.Node, cks: string) {
