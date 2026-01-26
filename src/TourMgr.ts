@@ -271,6 +271,7 @@ export class ViewProvider implements Vsc.WebviewViewProvider {
             <html lang="en" style="width:400px;">
             <head>
             <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0" />
+            <link rel="stylesheet" href="https://unpkg.com/@vscode/codicons/dist/codicon.css" />
             <style>
                 ${ViewProvider.cssText}
             </style>
@@ -324,6 +325,8 @@ function expandCmds(body: string): string {
                 return `<span class="cmd-bi"><span class="material-symbols-outlined">${args[1]}</span></span>`
             case 'bm':
                 return `${BM_SVG.replace('$label', args[1])}&nbsp;`
+            case 'ci':
+                return `<span class="codicon codicon-${args[1]}"></span>`
             case 'cd':
             case 'ce':
             case 'cf':
