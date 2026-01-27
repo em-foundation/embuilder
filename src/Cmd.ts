@@ -79,7 +79,7 @@ export async function build(uri?: Vsc.Uri, cid?: string) {
     const opt = cid === 'em.buildLoad' && !is_sim ? '--load' : cid === 'em.buildMeta' ? '--meta' : ''
     await Utils.spawnLog(['emscript', 'build', '--unit', Utils.unitPath(uri), opt])
     ContentView.refresh()
-    if (is_sim) {
+    if (is_sim && cid == 'em.buildLoad') {
         await Vsc.commands.executeCommand('wokwi-vscode.start') // TODO: only for "simulated" boards
     }
 }
