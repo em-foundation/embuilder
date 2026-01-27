@@ -108,6 +108,13 @@ export async function newUnit(node: ContentView.Node, uks: string) {
     await ContentView.reveal(newnode)
 }
 
+export async function refresh() {
+    ContentView.refresh()
+    await Vsc.commands.executeCommand('typescript.restartTsServer')
+    Utils.refreshProps()
+    Vsc.window.showInformationMessage(`EM•Browser refreshed`)
+}
+
 export async function remove(node: ContentView.Node) {
     const ok = await Vsc.window.showWarningMessage(
         `Permanently remove '${node.label}'?`,

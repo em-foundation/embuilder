@@ -98,7 +98,12 @@
             },
             {
                 "command": "embrowser.openReadonly",
-                "title": "Open Readonly"
+                "title": "Open Readonly",
+                "icon": "$(target)"
+            },
+            {
+                "command": "embrowser.refresh",
+                "title": "EM•Browser: Refresh"
             },
             {
                 "command": "embrowser.remove",
@@ -347,6 +352,11 @@
                     "command": "embrowser.build",
                     "when": "view == embrowser.content",
                     "group": "navigation@1"
+                },
+                {
+                    "command": "embrowser.refresh",
+                    "when": "view == embrowser.content",
+                    "group": "zzz_none"
                 },
                 {
                     "command": "embrowser.revealActiveUnit",
