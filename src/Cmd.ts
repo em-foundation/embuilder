@@ -70,15 +70,16 @@ export async function bindSetup(uri?: Vsc.Uri) {
 }
 
 export async function build(uri?: Vsc.Uri, cid?: string) {
+    const is_sim = Utils.getBoard().endsWith('-sim$$')
     if (cid === undefined) {
         uri = Vsc.window.activeTextEditor?.document.uri
         cid = 'em.buildLoad'
     }
     if (!uri || !uri.path.endsWith('.em.ts')) return
-    const opt = cid === 'em.buildLoad' ? '--load' : cid === 'em.buildMeta' ? '--meta' : ''
-    await Utils.spawnLog(['emscript', 'build', '--unit', Utils.unitPath(uri)])
+    const opt = cid === 'em.buildLoad' && !is_sim ? '--load' : cid === 'em.buildMeta' ? '--meta' : ''
+    await Utils.spawnLog(['emscript', 'build', '--unit', Utils.unitPath(uri), opt])
     ContentView.refresh()
-    if (cid === 'em.buildLoad') {
+    if (is_sim) {
         await Vsc.commands.executeCommand('wokwi-vscode.start') // TODO: only for "simulated" boards
     }
 }
