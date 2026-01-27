@@ -30,12 +30,13 @@ export class Provider implements Vsc.TreeDataProvider<TourNode> {
         const uris = (await Vsc.workspace.findFiles('**/*.emtour', '**/{node_modules,.git}/**')).sort()
         return uris.map(uri => {
             const item = new Vsc.TreeItem(uri, Vsc.TreeItemCollapsibleState.None)
-            item.resourceUri = uri
+            item.resourceUri = Vsc.Uri.parse(`embrowser-tour:${uri.path}`)  // synthetic
             item.command = {
                 command: 'em.tour.start',
                 title: 'Start Tour',
                 arguments: [uri],
             }
+            item.contextValue = 'embrowser.tour'
             item.iconPath = this.icon('icons/compass.png')
             return item
         })

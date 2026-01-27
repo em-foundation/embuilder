@@ -25,10 +25,10 @@ interface Step {
 
 interface Tour {
     readonly title: string
-    readonly $dev?: boolean
     readonly files: string[]
     readonly steps: Step[]
     uri?: Vsc.Uri
+    $dev?: boolean
 }
 
 const DEC_REND_OPTS: Vsc.DecorationRenderOptions = {
@@ -147,7 +147,7 @@ async function sync() {
     file.decorMap.forEach((v, k) => ted.setDecorations(v.type, [v.range]))
 }
 
-export async function start(uri: Vsc.Uri) {
+export async function start(uri: Vsc.Uri, devmode?: boolean) {
     console.log(`start ${initFlag}`)
     if (!initFlag) {
         initFlag = true
@@ -159,6 +159,7 @@ export async function start(uri: Vsc.Uri) {
     let src = await readText(uri)
     curTour = Yaml.load(src) as Tour
     curTour!.uri = uri
+    curTour.$dev = devmode
 
     let idx = 0
     src.split('\n').forEach((line, k) => {

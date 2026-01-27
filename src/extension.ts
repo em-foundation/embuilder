@@ -39,6 +39,11 @@ export async function activate(ctx: Vsc.ExtensionContext) {
         await Vsc.commands.executeCommand('workbench.view.extension.embrowser')
 
         ToursView.init(ctx)
+        ctx.subscriptions.push(
+            Vsc.commands.registerCommand('em.tour.startdev', async (node: Vsc.TreeItem) => {
+                await TourGuide.start(node.resourceUri!, true)
+            })
+        )
 
         ctx.subscriptions.push(Vsc.commands.registerCommand('embrowser.build', Cmd.build))
         ctx.subscriptions.push(Vsc.commands.registerCommand('embrowser.refresh', Cmd.refresh))

@@ -123,6 +123,10 @@
                 "title": "EM•Browser: Start Tour"
             },
             {
+                "command": "em.tour.startdev",
+                "title": "Start Tour in Development Mode"
+            },
+            {
                 "command": "em.tour.end",
                 "title": "End",
                 "icon": "$(trash)"
@@ -260,6 +264,10 @@
                     "when": "false"
                 },
                 {
+                    "command": "em.tour.startdev",
+                    "when": "false"
+                },
+                {
                     "command": "em.tour.end",
                     "when": "false"
                 },
@@ -345,6 +353,10 @@
                     "command": "em.newTemplate",
                     "group": "AAAemscript@2",
                     "when": "view == embrowser.content && viewItem == embrowser.bucket"
+                },
+                {
+                    "command": "em.tour.startdev",
+                    "when": "view == embrowser.tours"
                 }
             ],
             "view/title": [
