@@ -2,9 +2,9 @@
     "version": "0.2.0",
     "configurations": [
         {
+            "name": "Launch Extension",
             "type": "extensionHost",
             "request": "launch",
-            "name": "Launch Extension",
             "runtimeExecutable": "${execPath}",
             "args": [
                 "--extensionDevelopmentPath=${workspaceFolder}",
@@ -14,6 +14,22 @@
                 "${workspaceFolder}/out/**/*.js"
             ],
             "preLaunchTask": "Build Extension"
+        },
+        {
+            "name": "Launch Extension (clean)",
+            "type": "extensionHost",
+            "request": "launch",
+            "args": [
+                "--extensionDevelopmentPath=${workspaceFolder}",
+                "--disable-extensions",
+                "--user-data-dir=${workspaceFolder}/.clean-userdata",
+                "--extensions-dir=${workspaceFolder}/.clean-extensions",
+                "${workspaceFolder}/../emporium-test"
+            ],
+            "outFiles": [
+                "${workspaceFolder}/out/**/*.js"
+            ]
         }
+
     ]
 }
