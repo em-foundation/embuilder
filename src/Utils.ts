@@ -58,6 +58,11 @@ export function getVersFull(): string {
     return VERS
 }
 
+export function isCodespace(): boolean {
+    const e = process.env
+    return !!(e.CODESPACES || e.CODESPACE_NAME || e.GITHUB_CODESPACES_PORT_FORWARDING_DOMAIN)
+}
+
 export async function newContainer(uri: Vsc.Uri, cks: string): Promise<Vsc.Uri | null> {
     const cname = await Vsc.window.showInputBox({ placeHolder: `${cks} name` })
     if (!cname) return null
@@ -92,6 +97,26 @@ export async function newUnit(uri: Vsc.Uri, uks: string, content: string): Promi
     Fs.writeFileSync(upath, content)
     Vsc.commands.executeCommand('vscode.open', Vsc.Uri.file(upath), { preview: true })
     return Vsc.Uri.joinPath(uri, `${uname}.em.ts`)
+}
+
+export async function provision(ctx: Vsc.ExtensionContext) {
+    if (Fs.existsSync(toolsPath())) return
+    await Vsc.window.withProgress(
+        { location: Vsc.ProgressLocation.Notification, title: 'EM•Script: provisioning…', cancellable: false },
+        async () => {
+            console.log('*** provision: npm ci')
+            const r = Cp.spawnSync('npm', ['ci'], {
+                cwd: rootPath(),
+                shell: true,
+                encoding: 'utf8'
+            })
+
+            if (r.status) {
+                const msg = (r.stderr || r.stdout || '').trim()
+                throw new Error(msg || `npm ci failed: status = ${r.status}, msg = ${msg}`)
+            }
+        }
+    )
 }
 
 export function refreshProps() {
@@ -151,6 +176,14 @@ export function spawnSync(cli: string[]): string {
     if (err) console.log(`*** spawnSync: ${err}`)
     return proc.stdout ?? ''
 
+}
+
+export function toolsPath(): string {
+    return toolsUri().fsPath
+}
+
+export function toolsUri(): Vsc.Uri {
+    return Vsc.Uri.joinPath(ROOT.uri, 'tools')
 }
 
 export function unitPath(uri: Vsc.Uri): string {
