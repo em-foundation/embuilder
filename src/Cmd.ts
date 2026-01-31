@@ -90,14 +90,21 @@ export async function clean() {
     await Vsc.commands.executeCommand('typescript.restartTsServer')
 }
 
+let downloadBusy = false
+
 export async function downloadVcd() {
+
+    if (downloadBusy) return
+    const uri = StatusItems.vcdC.uri()
+    downloadBusy = true
+    Utils.updateVcd(uri.fsPath)
+    downloadBusy = false
 
     if (!Utils.isCodespace()) {
         StatusItems.vcdC.start()
         return
     }
 
-    const uri = StatusItems.vcdC.uri()
     await Vsc.commands.executeCommand('workbench.view.explorer')
     await Vsc.commands.executeCommand('revealInExplorer', uri)
 

@@ -200,6 +200,23 @@ export async function updateSettings(sect: string, key: string, val: any) {
     const conf = Vsc.workspace.getConfiguration(sect)
     await conf.update(key, val, Vsc.ConfigurationTarget.Workspace)
 }
+export function updateVcd(path: string) {
+    const updates: Array<[string, string]> = [
+        ['D0 $end', 'D0--AppOut-- $end'],
+        ['D1 $end', 'D1---DbgA--- $end'],
+        ['D2 $end', 'D2---DbgB--- $end'],
+        ['D3 $end', 'D3---DbgC--- $end'],
+        ['D4 $end', 'D4---DbgD--- $end'],
+        ['D5 $end', 'D5--AppBut-- $end'],
+        ['D6 $end', 'D6--AppLed-- $end'],
+        ['D7 $end', 'D7--SysLed-- $end'],
+    ]
+    let txt = Fs.readFileSync(path, 'utf-8')
+    for (const [from, to] of updates) {
+        txt = txt.replace(from, to)
+    }
+    Fs.writeFileSync(path, txt)
+}
 
 export function workPath(): string {
     return workUri().fsPath
