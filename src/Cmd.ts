@@ -90,6 +90,10 @@ export async function clean() {
     await Vsc.commands.executeCommand('typescript.restartTsServer')
 }
 
+export async function downloadVcd() {
+    StatusItems.vcdC.stop()
+}
+
 export async function initSetup() {
     const defSetup = Utils.getDefaultSetup()
     if (defSetup) {

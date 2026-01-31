@@ -48,6 +48,7 @@ export async function activate(ctx: Vsc.ExtensionContext) {
         )
 
         ctx.subscriptions.push(Vsc.commands.registerCommand('embrowser.build', Cmd.build))
+        ctx.subscriptions.push(Vsc.commands.registerCommand('embrowser.downloadVcd', Cmd.downloadVcd))
         ctx.subscriptions.push(Vsc.commands.registerCommand('embrowser.refresh', Cmd.refresh))
         ctx.subscriptions.push(Vsc.commands.registerCommand('embrowser.revealActiveUnit', Cmd.revealUnit))
         ctx.subscriptions.push(
@@ -117,10 +118,10 @@ export async function activate(ctx: Vsc.ExtensionContext) {
         ctx.subscriptions.push(Vsc.commands.registerCommand("em.bindBoard", Cmd.bindBoard))
         ctx.subscriptions.push(Vsc.commands.registerCommand("em.bindSetup", Cmd.bindSetup))
 
-        Vsc.window.showInformationMessage(`EM•Browser activated`)
-
         Utils.refreshProps()
         await Cmd.initSetup()
+
+        Vsc.window.showInformationMessage(`EM•Browser activated`)
 
     } catch (e) {
         console.log('*** activate: fail')

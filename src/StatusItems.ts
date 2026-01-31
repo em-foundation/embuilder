@@ -34,7 +34,8 @@ abstract class StatusItem {
         const res = conf.get(this.key) as string
         return res
     }
-    init() {
+    init(ctx: Vsc.ExtensionContext) {
+        ctx.subscriptions.push(this.status)
         this.display('')
     }
     abstract pickList(): string[]
@@ -83,7 +84,6 @@ export const boardC = new class Board extends StatusItem {
     }
 }
 
-
 export const setupC = new class Setup extends StatusItem {
     private static PRE = '$(gear)  '
     constructor() {
@@ -109,14 +109,47 @@ export const setupC = new class Setup extends StatusItem {
     }
 }
 
+export const vcdC = new class Download {
+    private timeout: NodeJS.Timeout | undefined
+    private readonly status = Vsc.window.createStatusBarItem(Vsc.StatusBarAlignment.Right)
+    private watcher = Vsc.workspace.createFileSystemWatcher('**/wokwi.vcd')
+    constructor() {
+        if (Utils.isCodespace()) {
+            this.status.text = '$(desktop-download) Save wokwi.vcd $(arrow-right) Reload in PulseView $(pulse)'
+            this.status.command = 'embrowser.downloadVcd'
+        } else {
+            this.status.text = 'Reload in PulseView $(pulse)'
+            this.status.command = undefined
+        }
+        this.status.color = EM_COLOR
+        this.watcher.onDidCreate(() => this.start())
+        this.watcher.onDidChange(() => this.start())
+    }
+    init(ctx: Vsc.ExtensionContext) {
+        ctx.subscriptions.push(this.status)
+        ctx.subscriptions.push(this.watcher)
+        this.status.hide()
+    }
+    start() {
+        if (this.timeout) clearTimeout(this.timeout)
+        this.timeout = setTimeout(() => this.stop(), 10_000)
+        this.status.show()
+    }
+    stop() {
+        if (this.timeout) clearTimeout(this.timeout)
+        this.status.hide()
+    }
+}
+
 export function init(ctx: Vsc.ExtensionContext) {
-    let sbi = Vsc.window.createStatusBarItem(Vsc.StatusBarAlignment.Left)
-    sbi.text = `$(terminal) EM•Script v${Utils.getVers()}`
-    sbi.color = EM_COLOR
-    sbi.show()
-    ctx.subscriptions.push(sbi)
-    boardC.init()
-    setupC.init()
+    const vers = Vsc.window.createStatusBarItem(Vsc.StatusBarAlignment.Left)
+    vers.text = `$(terminal) EM•Script v${Utils.getVers()}`
+    vers.color = EM_COLOR
+    vers.show()
+    ctx.subscriptions.push(vers)
+    boardC.init(ctx)
+    setupC.init(ctx)
+    vcdC.init(ctx)
 }
 
 function mkBoardNames(): string[] {

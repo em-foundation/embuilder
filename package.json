@@ -97,6 +97,10 @@
                 "icon": "$(build)"
             },
             {
+                "command": "embrowser.downloadVcd",
+                "title": "EM•Browser: Download wokwi.vcd"
+            },
+            {
                 "command": "embrowser.openReadonly",
                 "title": "Open Readonly",
                 "icon": "$(target)"
