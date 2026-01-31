@@ -6,6 +6,7 @@ import Yaml from 'js-yaml'
 import * as Utils from './Utils'
 
 export const EM_COLOR = '#00f0b5'
+export const VCD_COLOR = '#f0b000'
 
 abstract class StatusItem {
     private static UNK = '<empty>'
@@ -113,22 +114,19 @@ export const vcdC = new class Download {
     private static VCD_FILE = 'wokwi.vcd'
     private timeout: NodeJS.Timeout | undefined
     private readonly status = Vsc.window.createStatusBarItem(Vsc.StatusBarAlignment.Right)
-    private watcher = Vsc.workspace.createFileSystemWatcher(`**/${Download.VCD_FILE}`)
     constructor() {
         if (Utils.isCodespace()) {
-            this.status.text = `$(desktop-download) Save ${Download.VCD_FILE} $(arrow-right) Reload in PulseView $(pulse)`
-            this.status.command = 'embrowser.downloadVcd'
+            this.status.text = `$(cloud-download)  Save '${Download.VCD_FILE}' $(arrow-right) Reload in PulseView  $(pulse)`
         } else {
-            this.status.text = `Reload in PulseView $(pulse)`
-            this.status.command = undefined
+            this.status.text = `Reload '${Download.VCD_FILE}' in PulseView  $(pulse)`
         }
-        this.status.color = EM_COLOR
-        this.watcher.onDidCreate(() => this.start())
-        this.watcher.onDidChange(() => this.start())
+        this.status.color = VCD_COLOR
+    }
+    file() {
+        return Download.VCD_FILE
     }
     init(ctx: Vsc.ExtensionContext) {
         ctx.subscriptions.push(this.status)
-        ctx.subscriptions.push(this.watcher)
         this.status.hide()
     }
     start() {
@@ -136,9 +134,10 @@ export const vcdC = new class Download {
         this.timeout = setTimeout(() => this.stop(), 10_000)
         this.status.show()
     }
-    stop() {
+    async stop() {
         if (this.timeout) clearTimeout(this.timeout)
         this.status.hide()
+        await Utils.focusBrowser()
     }
     uri() {
         return Vsc.Uri.joinPath(Utils.rootUri(), Download.VCD_FILE)

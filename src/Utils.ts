@@ -31,6 +31,11 @@ const loggerC = new class Logger {
     }
 }
 
+export async function focusBrowser() {
+    await Vsc.commands.executeCommand('workbench.view.extension.embrowser')
+    await Vsc.commands.executeCommand('embrowser.content.focus')
+}
+
 export function getBoard(): string {
     return curPropMap.get(PROP_BOARD) ?? ''
 }

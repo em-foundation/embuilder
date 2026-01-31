@@ -37,8 +37,7 @@ export async function activate(ctx: Vsc.ExtensionContext) {
         ctx.subscriptions.push(Vsc.commands.registerCommand('em.tour.restart', TourGuide.restart))
 
         ContentView.init(ctx)
-        await Vsc.commands.executeCommand('embrowser.content.focus')
-        await Vsc.commands.executeCommand('workbench.view.extension.embrowser')
+        await Utils.focusBrowser()
 
         ToursView.init(ctx)
         ctx.subscriptions.push(
@@ -74,11 +73,18 @@ export async function activate(ctx: Vsc.ExtensionContext) {
             })
         }
 
-        const watcher = Vsc.workspace.createFileSystemWatcher(new Vsc.RelativePattern(Utils.rootUri(), 'workspace/**/*'))
+        const emsWatcher = Vsc.workspace.createFileSystemWatcher(new Vsc.RelativePattern(Utils.rootUri(), 'workspace/**/*'))
         ctx.subscriptions.push(
-            watcher,
-            watcher.onDidCreate(() => ContentView.refresh()),
-            watcher.onDidDelete(() => ContentView.refresh()),
+            emsWatcher,
+            emsWatcher.onDidCreate(() => ContentView.refresh()),
+            emsWatcher.onDidDelete(() => ContentView.refresh()),
+        )
+
+        const vcdWatcher = Vsc.workspace.createFileSystemWatcher(new Vsc.RelativePattern(Utils.rootUri(), '**/wokwi.vcd'))
+        ctx.subscriptions.push(
+            vcdWatcher,
+            vcdWatcher.onDidCreate(Cmd.downloadVcd),
+            vcdWatcher.onDidChange(Cmd.downloadVcd),
         )
 
         ctx.subscriptions.push(

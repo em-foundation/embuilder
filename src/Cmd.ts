@@ -91,9 +91,27 @@ export async function clean() {
 }
 
 export async function downloadVcd() {
+
+    if (!Utils.isCodespace()) {
+        StatusItems.vcdC.start()
+        return
+    }
+
     const uri = StatusItems.vcdC.uri()
-    await Vsc.commands.executeCommand('workbench.action.files.download', uri)
-    StatusItems.vcdC.stop()
+    await Vsc.commands.executeCommand('workbench.view.explorer')
+    await Vsc.commands.executeCommand('revealInExplorer', uri)
+
+    const r = await Vsc.window.showInformationMessage(
+        `Right-click '${StatusItems.vcdC.file()}' > Download to a known location`,
+        { modal: true },
+        'OK'
+    )
+
+    if (r === 'OK') {
+        StatusItems.vcdC.start()
+    } else {
+        await Utils.focusBrowser()
+    }
 }
 
 export async function initSetup() {
