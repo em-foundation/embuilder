@@ -110,15 +110,16 @@ export const setupC = new class Setup extends StatusItem {
 }
 
 export const vcdC = new class Download {
+    private static VCD_FILE = 'wokwi.vcd'
     private timeout: NodeJS.Timeout | undefined
     private readonly status = Vsc.window.createStatusBarItem(Vsc.StatusBarAlignment.Right)
-    private watcher = Vsc.workspace.createFileSystemWatcher('**/wokwi.vcd')
+    private watcher = Vsc.workspace.createFileSystemWatcher(`**/${Download.VCD_FILE}`)
     constructor() {
         if (Utils.isCodespace()) {
-            this.status.text = '$(desktop-download) Save wokwi.vcd $(arrow-right) Reload in PulseView $(pulse)'
+            this.status.text = `$(desktop-download) Save ${Download.VCD_FILE} $(arrow-right) Reload in PulseView $(pulse)`
             this.status.command = 'embrowser.downloadVcd'
         } else {
-            this.status.text = 'Reload in PulseView $(pulse)'
+            this.status.text = `Reload in PulseView $(pulse)`
             this.status.command = undefined
         }
         this.status.color = EM_COLOR
@@ -138,6 +139,9 @@ export const vcdC = new class Download {
     stop() {
         if (this.timeout) clearTimeout(this.timeout)
         this.status.hide()
+    }
+    uri() {
+        return Vsc.Uri.joinPath(Utils.rootUri(), Download.VCD_FILE)
     }
 }
 

@@ -2,7 +2,7 @@
     "name": "embrowser",
     "displayName": "EM•Browser",
     "description": "VS Code support for EM•Script",
-    "version": "26.0.19",
+    "version": "26.0.20",
     "publisher": "the-em-foundation",
     "icon": "icons/logo12.png",
     "license": "MIT",

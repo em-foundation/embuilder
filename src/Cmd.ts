@@ -91,6 +91,8 @@ export async function clean() {
 }
 
 export async function downloadVcd() {
+    const uri = StatusItems.vcdC.uri()
+    await Vsc.commands.executeCommand('workbench.action.files.download', uri)
     StatusItems.vcdC.stop()
 }
 
