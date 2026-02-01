@@ -146,7 +146,7 @@ export const vcdC = new class Download {
 
 export function init(ctx: Vsc.ExtensionContext) {
     const vers = Vsc.window.createStatusBarItem(Vsc.StatusBarAlignment.Left)
-    vers.text = `$(terminal) EM•Script v${Utils.getVers()}`
+    vers.text = `$(terminal) EM•Script v${Utils.getVersCli()}`
     vers.color = EM_COLOR
     vers.show()
     ctx.subscriptions.push(vers)

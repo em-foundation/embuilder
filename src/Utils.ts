@@ -10,7 +10,7 @@ export const PROP_PROG = 'em.lang.Prog'
 export const PROP_REQUIRES = 'em.lang.PackageRequires'
 
 const ROOT = Vsc.workspace.workspaceFolders![0]
-const VERS = spawnSync(['emscript', '--version'])
+const VERS_CLI = spawnSync(['emscript', '--version'])
 
 const curPropMap = new Map<string, string>()
 
@@ -55,12 +55,18 @@ export function getProps(): ReadonlyMap<string, string> {
     return curPropMap
 }
 
-export function getVers(): string {
-    return VERS.slice(0, VERS.lastIndexOf('.'))
+export function getVersCli(): string {
+    return VERS_CLI.slice(0, VERS_CLI.lastIndexOf('.'))
 }
 
-export function getVersFull(): string {
-    return VERS
+export function getVersCliFull(): string {
+    return VERS_CLI
+}
+
+export function getVersExt(): string {
+    const ext = Vsc.extensions.getExtension('the-em-foundation.embrowser')
+    const version = ext?.packageJSON.version
+    return version
 }
 
 export function isCodespace(): boolean {

@@ -127,7 +127,7 @@ export async function activate(ctx: Vsc.ExtensionContext) {
         Utils.refreshProps()
         await Cmd.initSetup()
 
-        Vsc.window.showInformationMessage(`EM•Browser activated`)
+        Vsc.window.showInformationMessage(`EM•Browser activated (v${Utils.getVersExt()})`)
 
     } catch (e) {
         console.log('*** activate: fail')
