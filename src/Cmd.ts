@@ -95,29 +95,32 @@ let downloadBusy = false
 export async function downloadVcd() {
 
     if (downloadBusy) return
-    const uri = StatusItems.vcdC.uri()
     downloadBusy = true
-    Utils.updateVcd(uri.fsPath)
-    downloadBusy = false
+    try {
+        const uri = StatusItems.vcdC.uri()
+        await Utils.updateVcd(uri)
 
-    if (!Utils.isCodespace()) {
-        StatusItems.vcdC.start()
-        return
-    }
+        if (!Utils.isCodespace()) {
+            StatusItems.vcdC.start()
+            return
+        }
 
-    await Vsc.commands.executeCommand('workbench.view.explorer')
-    await Vsc.commands.executeCommand('revealInExplorer', uri)
+        await Vsc.commands.executeCommand('workbench.view.explorer')
+        await Vsc.commands.executeCommand('revealInExplorer', uri)
 
-    const r = await Vsc.window.showInformationMessage(
-        `Right-click '${StatusItems.vcdC.file()}' > Download to a known location`,
-        { modal: true },
-        'OK'
-    )
+        const r = await Vsc.window.showInformationMessage(
+            `Right-click '${StatusItems.vcdC.file()}' > Download to a known location`,
+            { modal: true },
+            'OK'
+        )
 
-    if (r === 'OK') {
-        StatusItems.vcdC.start()
-    } else {
-        await Utils.focusBrowser()
+        if (r === 'OK') {
+            StatusItems.vcdC.start()
+        } else {
+            await Utils.focusBrowser()
+        }
+    } finally {
+        downloadBusy = false
     }
 }
 
