@@ -20,12 +20,14 @@ interface Step {
     readonly cmds: string[]
     readonly text: string
     readonly focus?: [number, number]
+    readonly acts?: number[]
     srcLine?: number
 }
 
 interface Tour {
     readonly title: string
     readonly files: string[]
+    readonly actions: string[]
     readonly steps: Step[]
     uri?: Vsc.Uri
     $dev?: boolean
@@ -127,9 +129,10 @@ export async function refresh() {
 
 export async function restart() {
     if (!curTour) return
-    let uri = curTour.uri!
+    const uri = curTour.uri!
+    const dev = curTour.$dev
     await end()
-    await start(uri)
+    await start(uri, dev)
 }
 
 async function sync() {
@@ -139,7 +142,7 @@ async function sync() {
         let ln = step.srcLine && stepIdx != 0 ? step.srcLine : 1
         ted.revealRange(mkRange(Number(ln)), Vsc.TextEditorRevealType.AtTop)
     }
-    await ViewProvider.renderText(step.text)
+    await ViewProvider.renderText(step.text, step.acts ?? [])
     if (!step.focus) return
     let file = fileTab[step.focus[0] - 1]
     let ted = await Vsc.window.showTextDocument(file.doc!, DOC_OPTS)
@@ -256,10 +259,10 @@ export class ViewProvider implements Vsc.WebviewViewProvider {
     }
 
     static async render(uri: Vsc.Uri) {
-        await ViewProvider.renderText(await readText(uri))
+        await ViewProvider.renderText(await readText(uri), [])
     }
 
-    static async renderText(text: string) {
+    static async renderText(text: string, acts: number[]) {
 
         const nonce = mkNonce()
 
