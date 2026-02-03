@@ -275,7 +275,7 @@ export class ViewProvider implements Vsc.WebviewViewProvider {
             ViewProvider.cssText = await readText(cssUri)
         }
 
-        let body = Md.render(expandCmds(text))
+        let body = Md.render(expandCmds(text, acts))
         let html = `
             <html lang="en" style="width:400px;">
             <head>
@@ -334,7 +334,7 @@ export class ViewProvider implements Vsc.WebviewViewProvider {
     }
 }
 
-function expandCmds(body: string): string {
+function expandCmds(body: string, acts: number[]): string {
     const dict = new Map<string, string>([
         ['$start', 'home'],
         ['$build', 'build'],
@@ -346,6 +346,7 @@ function expandCmds(body: string): string {
         ['$steps', 'footprint'],
         ['$todo', 'event_list'],
     ])
+    const buttons = mkButtons(acts)
     const replFxn = ((s: string, g1: string, g2: string) => {
         let args = g1.split(',')
         let txt = g2
@@ -369,7 +370,7 @@ function expandCmds(body: string): string {
                 return `<code class="cmd-${args[0]}">${txt}</code>`
             case 'ht': {
                 let sym = args[1].startsWith('$') ? dict.get(args[1]) : args[1]
-                return `<h1><span class="material-symbols-outlined">${sym}</span>&nbsp;${txt}</h1>`
+                return `<h1><span class="material-symbols-outlined">${sym}</span>&nbsp;${txt}${buttons}</h1>`
             }
             case 'le':
                 return `<a class="cmd-le" href="${args[1]}"><span class="cmd-le">${txt}</a>`
@@ -380,7 +381,16 @@ function expandCmds(body: string): string {
     return body.replace(/{\[(.+?)\](.*?)}/g, replFxn)
 }
 
-function mkNonce() {
+function mkButtons(acts: number[]): string {
+    let res = '<span class="em-actions">'
+    for (const aid of acts) {
+        const segs = curTour!.actions[aid - 1].split('|')
+        res += `<a class="cmd-bu" data-cmd="${segs[0]}" data-tip="${segs[2]}"><span class="codicon codicon-${segs[1]}"></a>&ensp;`
+    }
+    return `${res}</span>`
+}
+
+function mkNonce(): string {
     const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789'
     let s = ''
     for (let i = 0; i < 32; i++) s += chars.charAt(Math.floor(Math.random() * chars.length))

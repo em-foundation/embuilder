@@ -3,6 +3,7 @@
     --main-color-darker: hsl(165, 50%, 45%);
     --main-color-border: hsl(165, 40%, 45%);
     --main-color-background: hsl(165, 8%, 20%);
+    --button-color: hsl(35, 100%, 50%);
 }
 
 html {
@@ -54,6 +55,7 @@ h1 {
     margin: 0;
     margin-left: -5px;
     margin-bottom: 25px;
+    position: relative;
 }
 
 p {
@@ -73,6 +75,12 @@ span.cmd-bi span.material-symbols-outlined {
     padding-right: 3px;
 }
 
+span.em-actions {
+    position: absolute;
+    right: 0;
+    bottom: 0;   /* aligns to baseline area */
+}    
+
 a {
     color: var(--main-color-darker);
     font-weight: bold;
@@ -88,6 +96,28 @@ a[href^="http"]::after {
 
 a:focus {
     outline: none;
+}
+
+a.cmd-bu {
+    color: var(--button-color);
+    position: relative;
+}
+
+a.cmd-bu:hover::after {
+    content: attr(data-tip);
+    position: absolute;
+    right: 0;
+    top: 100%;
+    margin-top: 4px;
+    background: #252526;
+    color: #cccccc;
+    border: 1px solid #454545;
+    border-radius: 4px;
+    padding: 4px 6px;
+    font-size: 13px;
+    white-space: nowrap;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.35);
+    opacity: 1;
 }
 
 code {
