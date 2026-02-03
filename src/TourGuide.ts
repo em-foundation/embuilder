@@ -102,6 +102,7 @@ export async function end() {
     }
     await Vsc.commands.executeCommand(`${ViewProvider.ID}.removeView`)
     Vsc.commands.executeCommand('setContext', 'em-builder.activeTour', false)
+    await Vsc.commands.executeCommand('workbench.view.extension.emtours')
     if (ted0) await Vsc.window.showTextDocument(ted0.document, DOC_OPTS)
 }
 
@@ -148,12 +149,13 @@ async function sync() {
 }
 
 export async function start(uri: Vsc.Uri, devmode?: boolean) {
-    console.log(`start ${initFlag}`)
+    uri = Vsc.Uri.parse(`file://${uri.path}`)
     if (!initFlag) {
         initFlag = true
         curCtx.subscriptions.push(Vsc.window.registerWebviewViewProvider(ViewProvider.ID, new ViewProvider(curCtx)))
     }
     Vsc.commands.executeCommand('setContext', 'em-builder.activeTour', true)
+    await Vsc.commands.executeCommand('workbench.view.extension.embrowser')
     await Vsc.commands.executeCommand(`${ViewProvider.ID}.focus`)
 
     let src = await readText(uri)
@@ -258,6 +260,9 @@ export class ViewProvider implements Vsc.WebviewViewProvider {
     }
 
     static async renderText(text: string) {
+
+        const nonce = mkNonce()
+
         let ctx = ViewProvider.curCtx
         let cv = ViewProvider.curView
 
@@ -271,6 +276,12 @@ export class ViewProvider implements Vsc.WebviewViewProvider {
         let html = `
             <html lang="en" style="width:400px;">
             <head>
+            <meta http-equiv="Content-Security-Policy"
+                content="default-src 'none';
+                            img-src ${cv.cspSource} https: data:;
+                            style-src ${cv.cspSource} https: 'unsafe-inline';
+                            font-src https: data:;
+                            script-src 'nonce-${nonce}';">
             <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0" />
             <link rel="stylesheet" href="https://unpkg.com/@vscode/codicons/dist/codicon.css" />
             <style>
@@ -283,16 +294,25 @@ export class ViewProvider implements Vsc.WebviewViewProvider {
                     <div class="em-title">${curTour!.title}</div>
                     <div class="em-seqn">${stepIdx + 1} of ${stepEnd + 1}</div>
                 </div>
+
+                <script nonce="${nonce}">
+                    const vscode = acquireVsCodeApi()
+                    document.addEventListener('click', (e) => {
+                        const a = e.target.closest('a.cmd-bu')
+                        if (!a) return
+                        e.preventDefault()
+                        vscode.postMessage({ kind: 'cmd', id: a.dataset.cmd })
+                    })
+                </script>
             </body>
             </html>
-        `
+`
         cv.html = html
     }
 
     private view?: Vsc.Webview
 
     constructor(ctx: Vsc.ExtensionContext) {
-        console.log(`ctx = ${ctx}`)
         ViewProvider.curCtx = ctx
     }
 
@@ -300,9 +320,14 @@ export class ViewProvider implements Vsc.WebviewViewProvider {
         webviewView.show()
         this.view = webviewView.webview
         this.view.options = {
+            enableScripts: true,
             enableCommandUris: true
         }
         ViewProvider.curView = this.view
+        ViewProvider.curView.onDidReceiveMessage(async (msg) => {
+            if (msg?.kind === 'cmd')
+                await Vsc.commands.executeCommand(msg.id)
+        })
     }
 }
 
@@ -326,6 +351,8 @@ function expandCmds(body: string): string {
                 return `<span class="cmd-bi"><span class="material-symbols-outlined">${args[1]}</span></span>`
             case 'bm':
                 return `${BM_SVG.replace('$label', args[1])}&nbsp;`
+            case 'bu':
+                return `<a class="cmd-bu" href="#" data-cmd="${args[2]}" title="${txt}"><span class="codicon codicon-${args[1]}"></span><span class="cmd-bu-label">${txt}</span></a>`
             case 'ci':
                 return `<span class="codicon codicon-${args[1]}"></span>`
             case 'cd':
@@ -348,4 +375,11 @@ function expandCmds(body: string): string {
         }
     })
     return body.replace(/{\[(.+?)\](.*?)}/g, replFxn)
+}
+
+function mkNonce() {
+    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789'
+    let s = ''
+    for (let i = 0; i < 32; i++) s += chars.charAt(Math.floor(Math.random() * chars.length))
+    return s
 }

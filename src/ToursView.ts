@@ -27,7 +27,7 @@ export class Provider implements Vsc.TreeDataProvider<TourNode> {
     }
 
     async getChildren(_element?: TourNode): Promise<TourNode[]> {
-        const uris = (await Vsc.workspace.findFiles('**/*.emtour', '**/{node_modules,.git}/**')).sort()
+        const uris = (await Vsc.workspace.findFiles('workspace/**/*.emtour')).sort()
         return uris.map(uri => {
             const item = new Vsc.TreeItem(uri, Vsc.TreeItemCollapsibleState.None)
             item.resourceUri = Vsc.Uri.parse(`embrowser-tour:${uri.path}`)  // synthetic

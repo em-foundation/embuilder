@@ -412,6 +412,11 @@
                     "id": "embrowser",
                     "title": "EM•Browser",
                     "icon": "icons/logo-mono.svg"
+                },
+                {
+                    "id": "emtours",
+                    "title": "EM•Tours",
+                    "icon": "icons/tours.svg"
                 }
             ]
         },
@@ -423,14 +428,16 @@
                     "icon": ""
                 },
                 {
-                    "id": "embrowser.tours",
-                    "name": "Tours",
-                    "icon": ""
-                },
-                {
                     "type": "webview",
                     "id": "em.tourGuide",
                     "name": "Tour Guide",
+                    "icon": ""
+                }
+            ],
+            "emtours": [
+                {
+                    "id": "embrowser.tours",
+                    "name": "Tours",
                     "icon": ""
                 }
             ]
