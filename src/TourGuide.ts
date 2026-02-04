@@ -5,6 +5,8 @@ import * as Yaml from 'js-yaml'
 const Md = new MdMod.default({ html: true })
 const UTF8 = new TextDecoder('utf-8')
 
+type ActionId = string | number
+
 interface Decor {
     type: Vsc.TextEditorDecorationType
     range: Vsc.Range
@@ -20,7 +22,7 @@ interface Step {
     readonly cmds: string[]
     readonly text: string
     readonly focus?: [number, number]
-    readonly acts?: number[]
+    readonly acts?: ActionId[]
     srcLine?: number
 }
 
@@ -194,7 +196,7 @@ export async function start(uri: Vsc.Uri, devmode?: boolean) {
     if (curTour!.$dev) {
         await Vsc.window.showTextDocument(uri, { viewColumn: 2 })
         if (!watcher) watcher = Vsc.workspace.createFileSystemWatcher('**/*.emtour')
-        watcher.onDidChange(uri => { reload = true; start(uri) })
+        watcher.onDidChange(uri => { reload = true; start(uri, curTour!.$dev) })
     }
 
     monitor()
@@ -262,7 +264,7 @@ export class ViewProvider implements Vsc.WebviewViewProvider {
         await ViewProvider.renderText(await readText(uri), [])
     }
 
-    static async renderText(text: string, acts: number[]) {
+    static async renderText(text: string, acts: ActionId[]) {
 
         const nonce = mkNonce()
 
@@ -334,7 +336,7 @@ export class ViewProvider implements Vsc.WebviewViewProvider {
     }
 }
 
-function expandCmds(body: string, acts: number[]): string {
+function expandCmds(body: string, acts: ActionId[]): string {
     const dict = new Map<string, string>([
         ['$start', 'home'],
         ['$build', 'build'],
@@ -381,10 +383,15 @@ function expandCmds(body: string, acts: number[]): string {
     return body.replace(/{\[(.+?)\](.*?)}/g, replFxn)
 }
 
-function mkButtons(acts: number[]): string {
+function mkButtons(acts: ActionId[]): string {
+    const std_actions = new Map<string, string>([
+        ['$build', 'embrowser.build|build|build/load this file using EM•Script'],
+        ['$reveal', 'embrowser.revealActiveUnit|target|reveal this file in EM•Browser'],
+    ])
     let res = '<span class="em-actions">'
     for (const aid of acts) {
-        const segs = curTour!.actions[aid - 1].split('|')
+        const a = typeof aid === 'string' ? std_actions.get(aid)! : curTour!!.actions[aid - 1]
+        const segs = a.split('|')
         res += `<a class="cmd-bu" data-cmd="${segs[0]}" data-tip="${segs[2]}"><span class="codicon codicon-${segs[1]}"></a>&ensp;`
     }
     return `${res}</span>`
