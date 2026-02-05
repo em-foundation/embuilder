@@ -12,6 +12,7 @@ const ASSOCS = {
     '*.em.ts': 'typescript',
     '*.emtour': 'markdown',
     'em-boards': 'yaml',
+    'em-tour-bundle': 'yaml',
 }
 
 export async function activate(ctx: Vsc.ExtensionContext) {

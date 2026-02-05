@@ -1,9 +1,9 @@
 import * as MdMod from 'markdown-it'
+import * as Utils from './Utils'
 import * as Vsc from 'vscode'
 import * as Yaml from 'js-yaml'
 
 const Md = new MdMod.default({ html: true })
-const UTF8 = new TextDecoder('utf-8')
 
 type ActionId = string | number
 
@@ -32,6 +32,8 @@ interface Tour {
     readonly actions: string[]
     readonly steps: Step[]
     uri?: Vsc.Uri
+    bname?: string
+    tnum?: string
     $dev?: boolean
 }
 
@@ -77,10 +79,6 @@ let stepIdx: number
 let stepEnd: number
 let tedMonitor: Vsc.Disposable | null = null
 let watcher: Vsc.FileSystemWatcher | null = null
-
-async function readText(uri: Vsc.Uri): Promise<string> {
-    return UTF8.decode(await Vsc.workspace.fs.readFile(uri))
-}
 
 export async function init(ctx: Vsc.ExtensionContext) {
     curCtx = ctx
@@ -163,9 +161,14 @@ export async function start(uri: Vsc.Uri, devmode?: boolean) {
     await Vsc.commands.executeCommand('workbench.view.extension.embrowser')
     await Vsc.commands.executeCommand(`${ViewProvider.ID}.focus`)
 
-    let src = await readText(uri)
+    let src = await Utils.readText(uri)
     curTour = Yaml.load(src) as Tour
+    const metaUri = Vsc.Uri.joinPath(uri, '..', 'em-tour-bundle')
+    const meta = Yaml.load(await Utils.readText(metaUri)) as any
+    const tnum = uri.path.split('/').pop()?.slice(0, 2)
     curTour!.uri = uri
+    curTour!.bname = meta.title
+    curTour!.tnum = tnum
     curTour.$dev = devmode
 
     let idx = 0
@@ -261,7 +264,7 @@ export class ViewProvider implements Vsc.WebviewViewProvider {
     }
 
     static async render(uri: Vsc.Uri) {
-        await ViewProvider.renderText(await readText(uri), [])
+        await ViewProvider.renderText(await Utils.readText(uri), [])
     }
 
     static async renderText(text: string, acts: ActionId[]) {
@@ -274,10 +277,11 @@ export class ViewProvider implements Vsc.WebviewViewProvider {
         if (!ViewProvider.cssText) {
             let cssName = Vsc.env.uiKind === Vsc.UIKind.Web ? 'style-win32.css' : 'style-win32.css' /// TODO: fix
             let cssUri = Vsc.Uri.joinPath(ctx.extensionUri, 'tour-resources', cssName)
-            ViewProvider.cssText = await readText(cssUri)
+            ViewProvider.cssText = await Utils.readText(cssUri)
         }
 
         let body = Md.render(expandCmds(text, acts))
+        const title = `${curTour!.bname}&ensp;&rarr;&ensp;Tour&thinsp;${curTour!.tnum}&thinsp;&middot;&thinsp;${curTour!.title}`
         let html = `
             <html lang="en" style="width:400px;">
             <head>
@@ -296,7 +300,7 @@ export class ViewProvider implements Vsc.WebviewViewProvider {
             <body>
                 <div class="em-frame">
                     ${body}
-                    <div class="em-title">${curTour!.title}</div>
+                    <div class="em-title">${title}</div>
                     <div class="em-seqn">${stepIdx + 1} of ${stepEnd + 1}</div>
                 </div>
 
@@ -372,6 +376,10 @@ function expandCmds(body: string, acts: ActionId[]): string {
                 return `<code class="cmd-${args[0]}">${txt}</code>`
             case 'ht': {
                 let sym = args[1].startsWith('$') ? dict.get(args[1]) : args[1]
+                // ⟪ ⟫
+                console.log(`*** before ${txt}`)
+                txt = txt.replace(/⟪\[(.+?)\](.*?)⟫/g, replFxn)
+                console.log(`*** after ${txt}`)
                 return `<h1><span class="material-symbols-outlined">${sym}</span>&nbsp;${txt}${buttons}</h1>`
             }
             case 'le':

@@ -2,12 +2,15 @@ import Cp from 'child_process'
 import Fs from 'fs'
 import Path from 'path'
 import Vsc from 'vscode'
+import Yaml from 'js-yaml'
 
 export const PROP_BOARD = 'em.lang.BoardKind'
 export const PROP_DISTRO = 'em.lang.Distro'
 export const PROP_EXTENDS = 'em.lang.SetupExtends'
 export const PROP_PROG = 'em.lang.Prog'
 export const PROP_REQUIRES = 'em.lang.PackageRequires'
+
+const UTF8 = new TextDecoder('utf-8')
 
 const ROOT = Vsc.workspace.workspaceFolders![0]
 const VERS_CLI = spawnSync(['emscript', '--version'])
@@ -130,6 +133,11 @@ export async function provision(ctx: Vsc.ExtensionContext) {
     )
 }
 
+export async function readText(uri: Vsc.Uri): Promise<string> {
+    return UTF8.decode(await Vsc.workspace.fs.readFile(uri))
+}
+
+
 export function refreshProps() {
     const lines = spawnSync(['emscript', 'properties']).split('\n')
     curPropMap.clear()
@@ -195,6 +203,14 @@ export function toolsPath(): string {
 
 export function toolsUri(): Vsc.Uri {
     return Vsc.Uri.joinPath(ROOT.uri, 'tools')
+}
+
+export function toursPath(): string {
+    return toursUri().fsPath
+}
+
+export function toursUri(): Vsc.Uri {
+    return Vsc.Uri.joinPath(ROOT.uri, 'tours')
 }
 
 export function unitPath(uri: Vsc.Uri): string {

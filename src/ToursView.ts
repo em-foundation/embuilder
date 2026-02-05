@@ -1,4 +1,6 @@
+import * as Utils from './Utils'
 import * as Vsc from 'vscode'
+import * as Yaml from 'js-yaml'
 
 const VscFs = Vsc.workspace.fs
 
@@ -26,20 +28,35 @@ export class Provider implements Vsc.TreeDataProvider<TourNode> {
         return element
     }
 
-    async getChildren(_element?: TourNode): Promise<TourNode[]> {
-        const uris = (await Vsc.workspace.findFiles('workspace/**/*.emtour')).sort()
-        return uris.map(uri => {
-            const item = new Vsc.TreeItem(uri, Vsc.TreeItemCollapsibleState.None)
+    async getChildren(elem?: TourNode): Promise<TourNode[]> {
+        const bflg = elem && elem.contextValue == 'em.tour.bundle'
+        if (elem && !bflg) return []
+        let glob = 'tours/**/em-tour-bundle'
+        if (bflg) {
+            const segs = elem.resourceUri!.path.split('/')
+            const bname = segs[segs.length - 2]
+            glob = `tours/${bname}/*.emtour`
+        }
+        const uris = (await Vsc.workspace.findFiles(glob)).sort()
+        let items: TourNode[] = []
+        for (const uri of uris) {
+            const meta = Yaml.load(await Utils.readText(uri)) as any
+            const item = new Vsc.TreeItem(uri, !bflg ? Vsc.TreeItemCollapsibleState.Collapsed : Vsc.TreeItemCollapsibleState.None)
             item.resourceUri = Vsc.Uri.parse(`embrowser-tour:${uri.path}`)  // synthetic
-            item.command = {
-                command: 'em.tour.start',
-                title: 'Start Tour',
-                arguments: [uri],
+            item.contextValue = !bflg ? 'em.tour.bundle' : 'em.tour'
+            item.label = meta.title
+            item.tooltip = meta.description ?? '<TBD>'
+            item.iconPath = this.icon(!bflg ? 'icons/tour-bundle.svg' : 'icons/compass.png')
+            if (bflg) {
+                item.command = {
+                    command: 'em.tour.start',
+                    title: 'Start Tour',
+                    arguments: [uri],
+                }
             }
-            item.contextValue = 'embrowser.tour'
-            item.iconPath = this.icon('icons/compass.png')
-            return item
-        })
+            items.push(item)
+        }
+        return items
     }
 
     private icon(relPath: string): { light: Vsc.Uri, dark: Vsc.Uri } {
