@@ -39,6 +39,7 @@ export class Node extends Vsc.TreeItem {
         collapsibleState: Vsc.TreeItemCollapsibleState
     ) {
         super(label, collapsibleState)
+        this.tooltip = new Vsc.MarkdownString('')
         if (kind == 'workspace') {
             curNodeMap.clear()
             if (!curRoot) curRoot = this
