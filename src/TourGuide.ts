@@ -163,7 +163,7 @@ export async function start(uri: Vsc.Uri, devmode?: boolean) {
 
     let src = await Utils.readText(uri)
     curTour = Yaml.load(src) as Tour
-    const metaUri = Vsc.Uri.joinPath(uri, '..', 'em-tour-bundle')
+    const metaUri = Vsc.Uri.joinPath(uri, '..', 'emtour-bundle')
     const meta = Yaml.load(await Utils.readText(metaUri)) as any
     const tnum = uri.path.split('/').pop()?.slice(0, 2)
     curTour!.uri = uri

@@ -12,7 +12,7 @@ const ASSOCS = {
     '*.em.ts': 'typescript',
     '*.emtour': 'markdown',
     'em-boards': 'yaml',
-    'em-tour-bundle': 'yaml',
+    'emtour-bundle': 'yaml',
 }
 
 export async function activate(ctx: Vsc.ExtensionContext) {
@@ -46,6 +46,11 @@ export async function activate(ctx: Vsc.ExtensionContext) {
                 await TourGuide.start(node.resourceUri!, true)
             })
         )
+        ctx.subscriptions.push(
+            Vsc.commands.registerCommand('emtours.revealInExplorer', async (node: Vsc.TreeItem) => {
+                await Cmd.revealExplorer(Vsc.Uri.parse(`file://${node.resourceUri!.path}`))
+            })
+        )
 
         ctx.subscriptions.push(Vsc.commands.registerCommand('embrowser.build', Cmd.build))
         ctx.subscriptions.push(Vsc.commands.registerCommand('embrowser.downloadVcd', Cmd.downloadVcd))
@@ -53,7 +58,7 @@ export async function activate(ctx: Vsc.ExtensionContext) {
         ctx.subscriptions.push(Vsc.commands.registerCommand('embrowser.revealActiveUnit', Cmd.revealUnit))
         ctx.subscriptions.push(
             Vsc.commands.registerCommand('embrowser.revealInExplorer', async (node: ContentView.Node) => {
-                await Cmd.revealExplorer(node)
+                await Cmd.revealExplorer(node.uri)
             })
         )
         ctx.subscriptions.push(

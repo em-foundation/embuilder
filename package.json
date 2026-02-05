@@ -123,6 +123,10 @@
                 "icon": "$(target)"
             },
             {
+                "command": "emtours.revealInExplorer",
+                "title": "Reveal in Explorer"
+            },
+            {
                 "command": "em.tour.start",
                 "title": "EM•Browser: Start Tour"
             },
@@ -360,7 +364,11 @@
                 },
                 {
                     "command": "em.tour.startdev",
-                    "when": "view == embrowser.tours"
+                    "when": "view == embrowser.tours && viewItem == em.tour"
+                },
+                {
+                    "command": "emtours.revealInExplorer",
+                    "when": "view == embrowser.tours && viewItem == em.tour.bundle"
                 }
             ],
             "view/title": [

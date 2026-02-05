@@ -207,6 +207,7 @@ export async function revealUnit() {
     }
 }
 
-export async function revealExplorer(node: ContentView.Node) {
-    await Vsc.commands.executeCommand('revealInExplorer', node.uri)
+export async function revealExplorer(uri: Vsc.Uri) {
+    console.log(`*** reveal ${uri}`)
+    await Vsc.commands.executeCommand('revealInExplorer', uri)
 }

@@ -31,7 +31,7 @@ export class Provider implements Vsc.TreeDataProvider<TourNode> {
     async getChildren(elem?: TourNode): Promise<TourNode[]> {
         const bflg = elem && elem.contextValue == 'em.tour.bundle'
         if (elem && !bflg) return []
-        let glob = 'tours/**/em-tour-bundle'
+        let glob = 'tours/**/emtour-bundle'
         if (bflg) {
             const segs = elem.resourceUri!.path.split('/')
             const bname = segs[segs.length - 2]
