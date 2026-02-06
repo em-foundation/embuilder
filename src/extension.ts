@@ -118,6 +118,7 @@ export async function activate(ctx: Vsc.ExtensionContext) {
         await cfg.update('typescript.disableAutomaticTypeAcquisition', true, Vsc.ConfigurationTarget.Workspace)
         await cfg.update('typescript.tsserver.web.typeAcquisition.enabled', false, Vsc.ConfigurationTarget.Workspace)
         await cfg.update('workbench.colorTheme', 'EM•Script Dark', Vsc.ConfigurationTarget.Workspace)
+        await cfg.update('workbench.iconTheme', 'vs-minimal', Vsc.ConfigurationTarget.Workspace)
         await cfg.update('workbench.tree.indent', 20, Vsc.ConfigurationTarget.Workspace)
         await cfg.update('[typescript]', {
             'editor.defaultFormatter': 'vscode.typescript-language-features'
