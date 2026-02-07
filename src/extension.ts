@@ -110,6 +110,7 @@ export async function activate(ctx: Vsc.ExtensionContext) {
 
         const cfg = Vsc.workspace.getConfiguration()
         await cfg.update('files.associations', ASSOCS, Vsc.ConfigurationTarget.Workspace)
+
         StatusItems.init(ctx)
         ctx.subscriptions.push(Vsc.commands.registerCommand("em.bindBoard", Cmd.bindBoard))
         ctx.subscriptions.push(Vsc.commands.registerCommand("em.bindSetup", Cmd.bindSetup))
@@ -118,6 +119,15 @@ export async function activate(ctx: Vsc.ExtensionContext) {
         await Cmd.initSetup()
 
         Vsc.window.showInformationMessage(`EM•Browser activated (v${Utils.getVersExt()})`)
+
+        // avoid dropdown
+        setTimeout(async () => {
+            await Vsc.workspace.getConfiguration().update(
+                'workbench.colorTheme',
+                'EM•Script Dark',
+                Vsc.ConfigurationTarget.Workspace
+            )
+        }, 0)
 
     } catch (e) {
         console.log('*** activate: fail')
