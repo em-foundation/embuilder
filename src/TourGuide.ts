@@ -82,7 +82,7 @@ let watcher: Vsc.FileSystemWatcher | null = null
 
 export async function init(ctx: Vsc.ExtensionContext) {
     curCtx = ctx
-    await Vsc.commands.executeCommand(`${ViewProvider.ID}.removeView`)
+    Vsc.commands.executeCommand('setContext', 'em-builder.activeTour', false)
 }
 
 export async function end() {
@@ -102,7 +102,6 @@ export async function end() {
         watcher.dispose()
         watcher = null
     }
-    await Vsc.commands.executeCommand(`${ViewProvider.ID}.removeView`)
     Vsc.commands.executeCommand('setContext', 'em-builder.activeTour', false)
     await Vsc.commands.executeCommand('workbench.view.extension.emtours')
     if (ted0) await Vsc.window.showTextDocument(ted0.document, DOC_OPTS)

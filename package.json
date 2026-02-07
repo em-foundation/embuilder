@@ -441,7 +441,8 @@
                     "type": "webview",
                     "id": "em.tourGuide",
                     "name": "Tour Guide",
-                    "icon": ""
+                    "icon": "",
+                    "when": "em-builder.activeTour"
                 }
             ],
             "emtours": [
