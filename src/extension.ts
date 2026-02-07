@@ -109,24 +109,7 @@ export async function activate(ctx: Vsc.ExtensionContext) {
         )
 
         const cfg = Vsc.workspace.getConfiguration()
-        // await cfg.update('git.enabled', false, Vsc.ConfigurationTarget.Workspace)
-        await cfg.update('breadcrumbs.enabled', false, Vsc.ConfigurationTarget.Workspace)
-        await cfg.update('editor.fontSize', 14, Vsc.ConfigurationTarget.Workspace)
-        await cfg.update('editor.formatOnSave', true, Vsc.ConfigurationTarget.Workspace)
-        await cfg.update('editor.minimap.enabled', false, Vsc.ConfigurationTarget.Workspace)
         await cfg.update('files.associations', ASSOCS, Vsc.ConfigurationTarget.Workspace)
-        await cfg.update('typescript.disableAutomaticTypeAcquisition', true, Vsc.ConfigurationTarget.Workspace)
-        await cfg.update('typescript.tsserver.web.typeAcquisition.enabled', false, Vsc.ConfigurationTarget.Workspace)
-        await cfg.update('workbench.colorTheme', 'EM•Script Dark', Vsc.ConfigurationTarget.Workspace)
-        await cfg.update('workbench.iconTheme', 'vs-minimal', Vsc.ConfigurationTarget.Workspace)
-        await cfg.update('workbench.tree.indent', 20, Vsc.ConfigurationTarget.Workspace)
-        await cfg.update('[typescript]', {
-            'editor.defaultFormatter': 'vscode.typescript-language-features'
-        }, Vsc.ConfigurationTarget.Workspace)
-        await cfg.update('[typescriptreact]', {
-            'editor.defaultFormatter': 'vscode.typescript-language-features'
-        }, Vsc.ConfigurationTarget.Workspace)
-
         StatusItems.init(ctx)
         ctx.subscriptions.push(Vsc.commands.registerCommand("em.bindBoard", Cmd.bindBoard))
         ctx.subscriptions.push(Vsc.commands.registerCommand("em.bindSetup", Cmd.bindSetup))
