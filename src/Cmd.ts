@@ -124,6 +124,10 @@ export async function downloadVcd() {
     }
 }
 
+export async function exit() {
+    console.log('*** exit')
+}
+
 export async function initSetup() {
     const defSetup = Utils.getDefaultSetup()
     if (defSetup) {

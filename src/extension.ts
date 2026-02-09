@@ -54,6 +54,7 @@ export async function activate(ctx: Vsc.ExtensionContext) {
 
         ctx.subscriptions.push(Vsc.commands.registerCommand('embrowser.build', Cmd.build))
         ctx.subscriptions.push(Vsc.commands.registerCommand('embrowser.downloadVcd', Cmd.downloadVcd))
+        ctx.subscriptions.push(Vsc.commands.registerCommand('embrowser.exit', Cmd.exit))
         ctx.subscriptions.push(Vsc.commands.registerCommand('embrowser.refresh', Cmd.refresh))
         ctx.subscriptions.push(Vsc.commands.registerCommand('embrowser.revealActiveUnit', Cmd.revealUnit))
         ctx.subscriptions.push(

@@ -2,10 +2,11 @@
     "name": "embrowser",
     "displayName": "EM•Browser",
     "description": "VS Code support for EM•Script",
-    "version": "26.0.26",
+    "version": "26.0.29",
     "publisher": "the-em-foundation",
     "icon": "icons/logo12.png",
     "license": "MIT",
+    "homepage": "https://openem.org",
     "repository": {
         "type": "git",
         "url": "https://github.com/em-foundation/embrowser"
@@ -17,10 +18,9 @@
     "scripts": {
         "build": "npm run typecheck && esbuild src/extension.ts --bundle --format=cjs --platform=node --external:vscode --outfile=out/extension.js",
         "typecheck": "tsc -p tsconfig.json --noEmit",
-        "publish-dev": "npm version patch --no-git-tag-version && npm run build && vsce publish --pre-release --allow-star-activation",
+        "publish": "npm version patch --no-git-tag-version && npm run build && vsce publish --allow-star-activation",
         "vsce-pack": "npm run build && vsce pack --allow-star-activation",
-        "vsix": "npm run build && vsce pack --allow-star-activation",
-        "vsix-dev": "npm run build && vsce pack --allow-star-activation --pre-release"
+        "vsix": "npm run build && vsce pack --allow-star-activation"
     },
     "devDependencies": {
         "@types/js-yaml": "^4.0.9",
@@ -101,6 +101,11 @@
             {
                 "command": "embrowser.downloadVcd",
                 "title": "EM•Browser: Download wokwi.vcd"
+            },
+            {
+                "command": "embrowser.exit",
+                "title": "EM•Browser: Shutdown and Exit",
+                "icon": "$(debug-stop)"
             },
             {
                 "command": "embrowser.openReadonly",
@@ -387,7 +392,12 @@
                 {
                     "command": "embrowser.revealActiveUnit",
                     "when": "view == embrowser.content",
-                    "group": "navigation@1"
+                    "group": "navigation@2"
+                },
+                {
+                    "command": "embrowser.exit",
+                    "when": "view == embrowser.content",
+                    "group": "navigation@3"
                 },
                 {
                     "command": "em.tour.prev",
