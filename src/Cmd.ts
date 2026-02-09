@@ -130,23 +130,7 @@ export async function exit() {
 
 export async function initSetup() {
     const defSetup = Utils.getDefaultSetup()
-    if (defSetup) {
-        await StatusItems.setupC.set(defSetup)
-    } else if (Utils.isCodespace()) {
-        await StatusItems.setupC.set('rpi.2040://default')
-    } else {
-        let opts: Vsc.MessageOptions = {
-            detail: "Click below to select a tooling setup",
-            modal: true,
-        };
-        await StatusItems.boardC.set('')
-        if (
-            await Vsc.window.showWarningMessage(`EM•Script Setups`, opts, "Select...")
-        ) {
-            await bindSetup()
-        }
-    }
-
+    await StatusItems.setupC.set(defSetup ? defSetup : 'rpi.2040://default')
 }
 
 export async function newContainer(node: ContentView.Node, cks: string) {
