@@ -41,6 +41,8 @@ abstract class StatusItem {
     }
     abstract pickList(): string[]
     async set(name: string) {
+        name = (name == '<empty>') ? '' : name
+        console.log(`*** set ${this.key} '${name}'`)
         this.display(name)
         Utils.updateSettings('emscript', this.key, name ? name : undefined)
         const ipath = Path.join(Utils.workPath(), 'emscript.ini')
@@ -71,17 +73,15 @@ export const boardC = new class Board extends StatusItem {
         super('board', Utils.PROP_BOARD, 'em.bindBoard', 'Board – click to edit', '$(circuit-board) Board', Board.PRE)
     }
     pickList(): string[] {
-        const distro = Utils.getDistro()
-        if (!distro) return []
-        const file = Path.join(Utils.workPath(), distro.package, distro.bucket, 'em-boards')
-        if (!Fs.existsSync(file)) return []
-        let yobj = Yaml.load(String(Fs.readFileSync(file))) as Object
-        let bset = new Set<string>()
-        Object.keys(yobj).filter(k => !(k.startsWith('$'))).forEach(k => bset.add(`${Board.PRE}${k}`))
-        const res = Array.from(bset.keys()).sort()
-        res.push(`${Board.PRE}<bare-metal>`)
-        return res
-        // return mkBoardNames().map(sn => `${Board.PRE}${sn}`)
+        return mkBoardNames().map(sn => `${Board.PRE}${sn}`)
+    }
+    async setAux(name: string) {
+        if (!name || name == '<empty' || name == '<bare-metal>') {
+            await setupC.set('')
+            return
+        }
+        const pn = mkDistroPkg(name)
+        await setupC.set(`${pn}://default`)
     }
 }
 
@@ -92,21 +92,6 @@ export const setupC = new class Setup extends StatusItem {
     }
     pickList(): string[] {
         return mkSetupNames().map(sn => `${Setup.PRE}${sn}`)
-    }
-    async setAux(name: string) {
-        let brd = ''
-        const cur_brd = boardC.get()
-        if (name) {
-            brd = Utils.getBoard()
-            for (const b of boardC.pickList()) {
-                const bn = b.split('  ')[1]
-                if (cur_brd == bn) {
-                    brd = cur_brd
-                    break
-                }
-            }
-        }
-        await boardC.set(brd)
     }
 }
 
@@ -173,15 +158,24 @@ function mkBoardNames(): string[] {
     }
     res.sort()
     res.push('<bare-metal>')
+    res.push('<empty>')
     return res
+}
+
+function mkDistroPkg(brd: string): string {
+    return brd.split('://')[0].replace('.distro', '')
 }
 
 function mkSetupNames(): string[] {
     let res = new Array<string>()
+    const brd = boardC.get()
+    if (!brd) return []
+    const distro = (brd == '<bare-metal>') ? '' : mkDistroPkg(brd)
     const wpath = Utils.workPath()
     for (const pn of Fs.readdirSync(wpath)) {
         const ppath = Path.join(wpath, pn)
         if (!Fs.statSync(ppath).isDirectory() || pn.startsWith('.')) continue
+        if (distro && distro != pn) continue
         for (const fn of Fs.readdirSync(ppath)) {
             const m = fn.match(/^setup-(.+)\.ini$/)
             if (m == undefined) continue

@@ -129,8 +129,8 @@ export async function exit() {
 }
 
 export async function initSetup() {
-    const defSetup = Utils.getDefaultSetup()
-    await StatusItems.setupC.set(defSetup ? defSetup : 'rpi.2040://default')
+    const brd = Utils.getBoard()
+    await StatusItems.boardC.set(brd ? brd : 'rpi.2040://PI_PICO-$sim')
 }
 
 export async function newContainer(node: ContentView.Node, cks: string) {
