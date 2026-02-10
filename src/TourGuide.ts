@@ -268,7 +268,7 @@ export class ViewProvider implements Vsc.WebviewViewProvider {
 
     static async renderText(text: string, acts: ActionId[]) {
 
-        const nonce = mkNonce()
+        const nonce = Utils.mkNonce()
 
         let ctx = ViewProvider.curCtx
         let cv = ViewProvider.curView
@@ -402,11 +402,4 @@ function mkButtons(acts: ActionId[]): string {
         res += `<a class="cmd-bu" data-cmd="${segs[0]}" data-tip="${segs[2]}"><span class="codicon codicon-${segs[1]}"></a>&ensp;`
     }
     return `${res}</span>`
-}
-
-function mkNonce(): string {
-    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789'
-    let s = ''
-    for (let i = 0; i < 32; i++) s += chars.charAt(Math.floor(Math.random() * chars.length))
-    return s
 }

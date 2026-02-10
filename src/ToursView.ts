@@ -4,8 +4,18 @@ import * as Yaml from 'js-yaml'
 
 const VscFs = Vsc.workspace.fs
 
+type TourNode = Vsc.TreeItem
+
+let curFirstTour: TourNode | null = null
+let curFirstBundle: TourNode | null = null
+
 let curView: Provider
 let curTree: Vsc.TreeView<TourNode>
+
+export function firstTour(): TourNode {
+    console.log('*** firstTour')
+    return curFirstTour!
+}
 
 export function init(ctx: Vsc.ExtensionContext) {
     curView = new Provider(ctx.extensionUri)
@@ -15,12 +25,16 @@ export function init(ctx: Vsc.ExtensionContext) {
     ctx.subscriptions.push(curTree)
 }
 
-type TourNode = Vsc.TreeItem
+export function refresh(node?: TourNode) {
+    curView.refresh(node)
+}
 
 export class Provider implements Vsc.TreeDataProvider<TourNode> {
 
-    private readonly onDidChangeTreeDataEmitter = new Vsc.EventEmitter<TourNode | undefined>()
-    readonly onDidChangeTreeData = this.onDidChangeTreeDataEmitter.event
+    private items: TourNode[] = []
+
+    private readonly _onDidChangeTreeDataEmitter = new Vsc.EventEmitter<TourNode | undefined>()
+    readonly onDidChangeTreeData = this._onDidChangeTreeDataEmitter.event
 
     constructor(private readonly extUri: Vsc.Uri) { }
 
@@ -41,8 +55,11 @@ export class Provider implements Vsc.TreeDataProvider<TourNode> {
         let items: TourNode[] = []
         for (const uri of uris) {
             const meta = Yaml.load(await Utils.readText(uri)) as any
-            const item = new Vsc.TreeItem(uri, !bflg ? Vsc.TreeItemCollapsibleState.Collapsed : Vsc.TreeItemCollapsibleState.None)
+            const state = bflg ? Vsc.TreeItemCollapsibleState.None : curFirstBundle ? Vsc.TreeItemCollapsibleState.Collapsed : Vsc.TreeItemCollapsibleState.Expanded
+            const item = new Vsc.TreeItem(uri, state)
+            curFirstBundle ??= item
             item.resourceUri = Vsc.Uri.parse(`embrowser-tour:${uri.path}`)  // synthetic
+            console.log(item.resourceUri.path, bflg, state)
             item.contextValue = !bflg ? 'em.tour.bundle' : 'em.tour'
             item.label = meta.title
             item.tooltip = meta.description ?? '<TBD>'
@@ -53,10 +70,15 @@ export class Provider implements Vsc.TreeDataProvider<TourNode> {
                     title: 'Start Tour',
                     arguments: [uri],
                 }
+                curFirstTour ??= item
             }
             items.push(item)
         }
         return items
+    }
+
+    refresh(node?: TourNode): void {
+        this._onDidChangeTreeDataEmitter.fire(node)
     }
 
     private icon(relPath: string): { light: Vsc.Uri, dark: Vsc.Uri } {

@@ -103,9 +103,12 @@
                 "title": "EM•Browser: Download wokwi.vcd"
             },
             {
-                "command": "embrowser.exit",
-                "title": "EM•Browser: Shutdown and Exit",
-                "icon": "$(debug-stop)"
+                "command": "embrowser.showWelcome",
+                "title": "EM•Browser: Show Welcome"
+            },
+            {
+                "command": "embrowser.startFirstTour",
+                "title": "EM•Browser: Start first tour"
             },
             {
                 "command": "embrowser.openReadonly",
@@ -128,6 +131,11 @@
                 "command": "embrowser.revealActiveUnit",
                 "title": "Reveal Active Unit",
                 "icon": "$(target)"
+            },
+            {
+                "command": "embrowser.shutdown",
+                "title": "EM•Browser: Shutdown",
+                "icon": "$(debug-stop)"
             },
             {
                 "command": "emtours.revealInExplorer",
@@ -395,7 +403,7 @@
                     "group": "navigation@2"
                 },
                 {
-                    "command": "embrowser.exit",
+                    "command": "embrowser.shutdown",
                     "when": "view == embrowser.content",
                     "group": "navigation@3"
                 },

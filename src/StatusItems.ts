@@ -42,7 +42,6 @@ abstract class StatusItem {
     abstract pickList(): string[]
     async set(name: string) {
         name = (name == '<empty>') ? '' : name
-        console.log(`*** set ${this.key} '${name}'`)
         this.display(name)
         Utils.updateSettings('emscript', this.key, name ? name : undefined)
         const ipath = Path.join(Utils.workPath(), 'emscript.ini')

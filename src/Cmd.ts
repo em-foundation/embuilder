@@ -1,5 +1,7 @@
 import * as ContentView from './ContentView'
 import * as StatusItems from './StatusItems'
+import * as TourGuide from './TourGuide'
+import * as ToursView from './ToursView'
 import * as Utils from './Utils'
 import * as Vsc from 'vscode'
 
@@ -124,10 +126,6 @@ export async function downloadVcd() {
     }
 }
 
-export async function exit() {
-    console.log('*** exit')
-}
-
 export async function initSetup() {
     const brd = Utils.getBoard()
     await StatusItems.boardC.set(brd ? brd : 'rpi.2040://PI_PICO-$sim')
@@ -196,6 +194,74 @@ export async function revealUnit() {
 }
 
 export async function revealExplorer(uri: Vsc.Uri) {
-    console.log(`*** reveal ${uri}`)
     await Vsc.commands.executeCommand('revealInExplorer', uri)
 }
+
+export async function showWelcome() {
+    const panel = Vsc.window.createWebviewPanel(
+        'embrowser.welcome',
+        'Welcome to EM•Browser',
+        Vsc.ViewColumn.One,
+        { enableScripts: true }
+    )
+    const cssUri = Vsc.Uri.joinPath(Utils.rootUri(), 'docs', 'welcome', 'style.css')
+    const cssText = await Utils.readText(cssUri)
+
+    const bodyUri = Vsc.Uri.joinPath(Utils.rootUri(), 'docs', 'welcome', 'body.html')
+    const bodyText = await Utils.readText(bodyUri)
+
+    const logoUri = panel.webview.asWebviewUri(
+        Vsc.Uri.joinPath(Utils.rootUri(), 'docs', 'welcome', 'logo.png')
+    )
+
+    const nonce = Utils.mkNonce()
+
+    panel.webview.onDidReceiveMessage(async (msg) => {
+        if (msg?.kind === 'cmd' && typeof msg.id === 'string')
+            await Vsc.commands.executeCommand(msg.id)
+    })
+    panel.webview.html = `<!doctype html>
+<html>
+<head>
+<meta charset='utf-8'>
+<meta http-equiv='Content-Security-Policy' content="default-src 'none'; img-src ${panel.webview.cspSource} https: data:; style-src ${panel.webview.cspSource} 'unsafe-inline'; script-src 'nonce-${nonce}';">
+<meta name='viewport' content='width=device-width,initial-scale=1'>
+<style>
+${cssText}
+</style>
+</head>
+<body>
+<div class="frame">
+    <div class="logo">
+        <img src="${logoUri}" alt="EM•Browser">
+    </div>
+${bodyText}
+</div>
+<script nonce='${nonce}'>
+  const vscode = acquireVsCodeApi()
+  document.addEventListener('click', (e) => {
+    const a = e.target.closest('.cmd-wc')
+    if (!a) return
+    e.preventDefault()
+    vscode.postMessage({ kind: 'cmd', id: a.dataset.cmd })
+  })
+</script>
+</body>
+</html>`
+
+}
+
+export async function shutdown() {
+    const r = await Vsc.window.showWarningMessage(
+        `Shutdown EM•Browser`,
+        { modal: true },
+        'OK'
+    )
+    await Vsc.commands.executeCommand('github.codespaces.disconnectSuspend')
+}
+
+export async function startFirstTour() {
+    await Vsc.commands.executeCommand('workbench.view.extension.emtours')
+    setTimeout(async () => { await TourGuide.start(ToursView.firstTour().resourceUri!) }, 250)
+}
+

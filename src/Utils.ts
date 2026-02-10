@@ -77,6 +77,13 @@ export function isCodespace(): boolean {
     return !!(e.CODESPACES || e.CODESPACE_NAME || e.GITHUB_CODESPACES_PORT_FORWARDING_DOMAIN)
 }
 
+export function mkNonce(): string {
+    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789'
+    let s = ''
+    for (let i = 0; i < 32; i++) s += chars.charAt(Math.floor(Math.random() * chars.length))
+    return s
+}
+
 export async function newContainer(uri: Vsc.Uri, cks: string): Promise<Vsc.Uri | null> {
     const cname = await Vsc.window.showInputBox({ placeHolder: `${cks} name` })
     if (!cname) return null
