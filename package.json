@@ -135,7 +135,7 @@
             {
                 "command": "embrowser.shutdown",
                 "title": "EM•Browser: Shutdown",
-                "icon": "$(debug-stop)"
+                "icon": "icons/shutdown.svg"
             },
             {
                 "command": "emtours.revealInExplorer",
