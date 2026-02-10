@@ -120,6 +120,7 @@ export async function activate(ctx: Vsc.ExtensionContext) {
         await cfg.update('files.associations', ASSOCS, Vsc.ConfigurationTarget.Workspace)
         await cfg.update('typescript.disableAutomaticTypeAcquisition', true, Vsc.ConfigurationTarget.Workspace)
         await cfg.update('typescript.tsserver.web.typeAcquisition.enabled', false, Vsc.ConfigurationTarget.Workspace)
+        await cfg.update('window.zoomLevel', -1, Vsc.ConfigurationTarget.Workspace)
         await cfg.update('workbench.colorTheme', 'EM•Script Dark', Vsc.ConfigurationTarget.Workspace)
         await cfg.update('workbench.iconTheme', 'vs-minimal', Vsc.ConfigurationTarget.Workspace)
         await cfg.update('workbench.tree.indent', 20, Vsc.ConfigurationTarget.Workspace)
@@ -138,6 +139,7 @@ export async function activate(ctx: Vsc.ExtensionContext) {
         await Cmd.initSetup()
 
         Vsc.window.showInformationMessage(`EM•Browser activated (v${Utils.getVersExt()})`)
+        Cmd.showWelcomeFirstTime(ctx)
 
         // avoid dropdown
         setTimeout(async () => {

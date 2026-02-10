@@ -251,6 +251,16 @@ ${bodyText}
 
 }
 
+export async function showWelcomeFirstTime(ctx: Vsc.ExtensionContext) {
+    const key = 'embrowser.welcomeShown'
+    const shown = ctx.workspaceState.get<boolean>(key, false)
+    const hasAnyTabs = Vsc.window.tabGroups.all.some(g => g.tabs.length > 0)
+    if (shown && hasAnyTabs) return
+    await Vsc.commands.executeCommand('workbench.action.closeAllEditors')
+    await showWelcome()
+    await ctx.workspaceState.update(key, true)
+}
+
 export async function shutdown() {
     const r = await Vsc.window.showWarningMessage(
         `Shutdown EM•Browser`,
