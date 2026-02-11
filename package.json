@@ -157,17 +157,17 @@
             {
                 "command": "em.tour.next",
                 "title": "Next",
-                "icon": "$(debug-continue)"
+                "icon": "icons/next.svg"
             },
             {
                 "command": "em.tour.prev",
                 "title": "Back",
-                "icon": "$(debug-reverse-continue)"
+                "icon": "icons/back.svg"
             },
             {
                 "command": "em.tour.refresh",
                 "title": "Refresh",
-                "icon": "$(debug-restart)"
+                "icon": "icons/refresh.svg"
             },
             {
                 "command": "em.tour.restart",

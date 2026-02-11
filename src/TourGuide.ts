@@ -162,6 +162,8 @@ export async function start(uri: Vsc.Uri, devmode?: boolean) {
 
     let src = await Utils.readText(uri)
     curTour = Yaml.load(src) as Tour
+    console.log(curTour)
+    // console.log(`*** ${curTour!.steps.length} steps`)
     const metaUri = Vsc.Uri.joinPath(uri, '..', 'emtour-bundle')
     const meta = Yaml.load(await Utils.readText(metaUri)) as any
     const tnum = uri.path.split('/').pop()?.slice(0, 2)
@@ -189,7 +191,7 @@ export async function start(uri: Vsc.Uri, devmode?: boolean) {
     const ws = Vsc.workspace.workspaceFolders?.[0]?.uri
     if (!ws) return
 
-    for (let fn of curTour!.files) {
+    for (let fn of curTour!.files ?? []) {
         fileTab.push({ uri: Vsc.Uri.joinPath(ws, 'workspace', fn.replace(':', '/')) })
     }
 
@@ -206,8 +208,12 @@ export async function start(uri: Vsc.Uri, devmode?: boolean) {
 }
 
 async function execCmds() {
+    const cmds = curTour!.steps[stepIdx].cmds ?? []
+    console.log(`${cmds.length} cmds`)
+
+    console.log(cmds.length)
     try {
-        for (let cmd of curTour!.steps[stepIdx].cmds) {
+        for (let cmd of cmds) {
             let segs = cmd.trim().split(/\s+/)
             let file = segs.length > 1 && Number(segs[1]) ? fileTab[Number(segs[1]) - 1] : null
             switch (segs[0]) {

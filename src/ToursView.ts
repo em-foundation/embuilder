@@ -13,7 +13,6 @@ let curView: Provider
 let curTree: Vsc.TreeView<TourNode>
 
 export function firstTour(): TourNode {
-    console.log('*** firstTour')
     return curFirstTour!
 }
 
