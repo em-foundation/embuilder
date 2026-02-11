@@ -152,7 +152,7 @@
             {
                 "command": "em.tour.end",
                 "title": "End",
-                "icon": "$(trash)"
+                "icon": "icons/end.svg"
             },
             {
                 "command": "em.tour.next",
@@ -172,7 +172,7 @@
             {
                 "command": "em.tour.restart",
                 "title": "Restart",
-                "icon": "$(home)"
+                "icon": "icons/home.svg"
             }
         ],
         "configuration": {
