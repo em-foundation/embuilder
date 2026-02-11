@@ -2,7 +2,7 @@
     "name": "embrowser",
     "displayName": "EM•Browser",
     "description": "VS Code support for EM•Script",
-    "version": "26.0.30",
+    "version": "26.0.31",
     "publisher": "the-em-foundation",
     "icon": "icons/logo12.png",
     "license": "MIT",
@@ -96,7 +96,7 @@
             {
                 "command": "embrowser.build",
                 "title": "EM – Build and Load",
-                "icon": "$(build)"
+                "icon": "icons/load.svg"
             },
             {
                 "command": "embrowser.downloadVcd",
@@ -130,7 +130,7 @@
             {
                 "command": "embrowser.revealActiveUnit",
                 "title": "Reveal Active Unit",
-                "icon": "$(target)"
+                "icon": "icons/target.svg"
             },
             {
                 "command": "embrowser.shutdown",
