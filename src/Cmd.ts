@@ -128,7 +128,7 @@ export async function downloadVcd() {
 
 export async function initSetup() {
     const brd = Utils.getBoard()
-    await StatusItems.boardC.set(brd ? brd : 'rpi.2040://PI_PICO-$sim')
+    await StatusItems.boardC.set(brd ? brd : 'rpi.2040://PI_PICO-sim$$')
 }
 
 export async function newContainer(node: ContentView.Node, cks: string) {
