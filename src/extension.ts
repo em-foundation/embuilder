@@ -138,8 +138,8 @@ export async function activate(ctx: Vsc.ExtensionContext) {
         Utils.refreshProps()
         await Cmd.initSetup()
 
+        Cmd.showWelcome()
         Vsc.window.showInformationMessage(`EM•Browser activated (v${Utils.getVersExt()})`)
-        Cmd.showWelcomeFirstTime(ctx)
 
         // avoid dropdown
         setTimeout(async () => {

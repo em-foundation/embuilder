@@ -197,30 +197,38 @@ export async function revealExplorer(uri: Vsc.Uri) {
     await Vsc.commands.executeCommand('revealInExplorer', uri)
 }
 
+let welcomePanel: Vsc.WebviewPanel | undefined
+
 export async function showWelcome() {
-    const panel = Vsc.window.createWebviewPanel(
-        'embrowser.welcome',
-        'Welcome to EM•Browser',
-        Vsc.ViewColumn.One,
-        { enableScripts: true }
-    )
-    const cssUri = Vsc.Uri.joinPath(Utils.rootUri(), 'docs', 'welcome', 'style.css')
-    const cssText = await Utils.readText(cssUri)
+    if (!welcomePanel) {
 
-    const bodyUri = Vsc.Uri.joinPath(Utils.rootUri(), 'docs', 'welcome', 'body.html')
-    const bodyText = await Utils.readText(bodyUri)
+        const panel = Vsc.window.createWebviewPanel(
+            'embrowser.welcome',
+            'EM•Home',
+            Vsc.ViewColumn.One,
+            { enableScripts: true, retainContextWhenHidden: true }
+        )
+        welcomePanel = panel
+        panel.onDidDispose(() => { welcomePanel = undefined })
 
-    const logoUri = panel.webview.asWebviewUri(
-        Vsc.Uri.joinPath(Utils.rootUri(), 'docs', 'welcome', 'logo.png')
-    )
+        const cssUri = Vsc.Uri.joinPath(Utils.rootUri(), 'docs', 'welcome', 'style.css')
+        const cssText = await Utils.readText(cssUri)
 
-    const nonce = Utils.mkNonce()
+        const bodyUri = Vsc.Uri.joinPath(Utils.rootUri(), 'docs', 'welcome', 'body.html')
+        const bodyText = await Utils.readText(bodyUri)
 
-    panel.webview.onDidReceiveMessage(async (msg) => {
-        if (msg?.kind === 'cmd' && typeof msg.id === 'string')
-            await Vsc.commands.executeCommand(msg.id)
-    })
-    panel.webview.html = `<!doctype html>
+        const logoUri = panel.webview.asWebviewUri(
+            Vsc.Uri.joinPath(Utils.rootUri(), 'docs', 'welcome', 'logo.png')
+        )
+
+        const nonce = Utils.mkNonce()
+
+        panel.webview.onDidReceiveMessage(async (msg) => {
+            if (msg?.kind === 'cmd' && typeof msg.id === 'string')
+                await Vsc.commands.executeCommand(msg.id)
+        })
+
+        panel.webview.html = `<!doctype html>
 <html>
 <head>
 <meta charset='utf-8'>
@@ -248,17 +256,12 @@ ${bodyText}
 </script>
 </body>
 </html>`
+    }
 
-}
-
-export async function showWelcomeFirstTime(ctx: Vsc.ExtensionContext) {
-    const key = 'embrowser.welcomeShown'
-    const shown = ctx.workspaceState.get<boolean>(key, false)
-    const hasAnyTabs = Vsc.window.tabGroups.all.some(g => g.tabs.length > 0)
-    if (shown && hasAnyTabs) return
-    await Vsc.commands.executeCommand('workbench.action.closeAllEditors')
-    await showWelcome()
-    await ctx.workspaceState.update(key, true)
+    welcomePanel.reveal(Vsc.ViewColumn.One, true)
+    await Vsc.commands.executeCommand('workbench.action.moveEditorToFirstGroup')
+    for (let i = 0; i < 20; i++) await Vsc.commands.executeCommand('workbench.action.moveEditorLeftInGroup')
+    await Vsc.commands.executeCommand('workbench.action.pinEditor')
 }
 
 export async function shutdown() {
@@ -274,4 +277,3 @@ export async function startFirstTour() {
     await Vsc.commands.executeCommand('workbench.view.extension.emtours')
     setTimeout(async () => { await TourGuide.start(ToursView.firstTour().resourceUri!) }, 250)
 }
-
