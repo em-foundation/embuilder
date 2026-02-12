@@ -41,7 +41,7 @@ const DEC_REND_OPTS: Vsc.DecorationRenderOptions = {
     overviewRulerLane: Vsc.OverviewRulerLane.Full
 }
 
-const DOC_OPTS: Vsc.TextDocumentShowOptions = { viewColumn: 1, preview: false }
+const OPEN_OPTS: Vsc.TextDocumentShowOptions = { viewColumn: 1, preview: false }
 
 const BM_SVG = '<svg xmlns="http://www.w3.org/2000/svg" height="18px" viewBox="0 0 20 20" width="18px" fill="hsl(48,89%,50%)"><path d="M0 0h24v24H0V0z" fill="none"/><path d="M17 3H7c-1.1 0-2 .9-2 2v16l7-3 7 3V5c0-1.1-.9-2-2-2z"/> <text text-anchor="middle" alignment-baseline="middle" x="11.5" y="12.0" fill="black" font-weight="bold" font-size="16" font-family="Consolas, monospace">$label</text> </svg>'
 
@@ -89,7 +89,7 @@ export async function end() {
     let ted0: Vsc.TextEditor | null = null
     for (let file of fileTab) {
         if (!file.doc) continue
-        let ted = await Vsc.window.showTextDocument(file.doc, DOC_OPTS)
+        let ted = await Vsc.window.showTextDocument(file.doc, OPEN_OPTS)
         if (file.decorMap) file.decorMap.forEach((v, k) => ted.setDecorations(v.type, []))
         if (!ted0) ted0 = ted
     }
@@ -104,7 +104,7 @@ export async function end() {
     }
     Vsc.commands.executeCommand('setContext', 'em-builder.activeTour', false)
     await Vsc.commands.executeCommand('workbench.view.extension.emtours')
-    if (ted0) await Vsc.window.showTextDocument(ted0.document, DOC_OPTS)
+    if (ted0) await Vsc.window.showTextDocument(ted0.document, OPEN_OPTS)
 }
 
 export async function next() {
@@ -144,7 +144,7 @@ async function sync() {
     await ViewProvider.renderText(step.text, step.acts ?? [])
     if (!step.focus) return
     let file = fileTab[step.focus[0] - 1]
-    let ted = await Vsc.window.showTextDocument(file.doc!, DOC_OPTS)
+    let ted = await Vsc.window.showTextDocument(file.doc!, OPEN_OPTS)
     ted.revealRange(mkRange(Number(step.focus[1])), Vsc.TextEditorRevealType.AtTop)
     if (!file.decorMap) return
     file.decorMap.forEach((v, k) => ted.setDecorations(v.type, [v.range]))
@@ -224,13 +224,12 @@ async function execCmds() {
                 }
                 case 'open': {
                     file!.doc = await Vsc.workspace.openTextDocument(file!.uri)
-                    await Vsc.window.showTextDocument(file!.doc, DOC_OPTS)
+                    await Vsc.window.showTextDocument(file!.doc, OPEN_OPTS)
                     if (!(curTour!.$dev)) await Vsc.commands.executeCommand('workbench.action.files.setActiveEditorReadonlyInSession')
                     break
                 }
                 case 'view': {
-                    console.log(`*** view ${file!.uri.path}`)
-                    await Vsc.commands.executeCommand('vscode.open', file!.uri)
+                    await Vsc.commands.executeCommand('vscode.open', file!.uri, OPEN_OPTS)
                     break
                 }
             }
