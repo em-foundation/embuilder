@@ -191,7 +191,8 @@ export async function start(uri: Vsc.Uri, devmode?: boolean) {
         fileTab.push({ uri: Vsc.Uri.joinPath(baseUri, fn.replace(':', '/')) })
     }
 
-    Vsc.window.tabGroups.all.forEach(tg => Vsc.window.tabGroups.close(tg))
+    await closeAllExceptWelcome()
+    await Vsc.commands.executeCommand('embrowser.showWelcome')
 
     if (curTour!.$dev) {
         await Vsc.window.showTextDocument(uri, { viewColumn: 2 })
@@ -237,6 +238,16 @@ async function execCmds() {
     } catch (err) { console.log(err) }
 }
 
+async function closeAllExceptWelcome() {
+    for (const group of Vsc.window.tabGroups.all) {
+        const toClose = group.tabs.filter(t => {
+            const input = (t as any).input
+            return input?.viewType !== 'embrowser.welcome'
+        })
+        if (toClose.length)
+            await Vsc.window.tabGroups.close(toClose, true)
+    }
+}
 function mkRange(line: number) {
     let pos = new Vsc.Position(line - 1, 0)
     return new Vsc.Range(pos, pos)

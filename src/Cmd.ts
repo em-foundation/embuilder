@@ -200,6 +200,7 @@ export async function revealExplorer(uri: Vsc.Uri) {
 let welcomePanel: Vsc.WebviewPanel | undefined
 
 export async function showWelcome() {
+    console.log(`*** welcome ${welcomePanel}`)
     if (!welcomePanel) {
 
         const panel = Vsc.window.createWebviewPanel(
