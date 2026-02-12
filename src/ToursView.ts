@@ -58,7 +58,6 @@ export class Provider implements Vsc.TreeDataProvider<TourNode> {
             const item = new Vsc.TreeItem(uri, state)
             curFirstBundle ??= item
             item.resourceUri = Vsc.Uri.parse(`embrowser-tour:${uri.path}`)  // synthetic
-            console.log(item.resourceUri.path, bflg, state)
             item.contextValue = !bflg ? 'em.tour.bundle' : 'em.tour'
             item.label = meta.title
             item.tooltip = meta.description ?? '<TBD>'

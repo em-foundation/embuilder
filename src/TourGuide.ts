@@ -162,8 +162,6 @@ export async function start(uri: Vsc.Uri, devmode?: boolean) {
 
     let src = await Utils.readText(uri)
     curTour = Yaml.load(src) as Tour
-    console.log(curTour)
-    // console.log(`*** ${curTour!.steps.length} steps`)
     const metaUri = Vsc.Uri.joinPath(uri, '..', 'emtour-bundle')
     const meta = Yaml.load(await Utils.readText(metaUri)) as any
     const tnum = uri.path.split('/').pop()?.slice(0, 2)
@@ -188,11 +186,9 @@ export async function start(uri: Vsc.Uri, devmode?: boolean) {
     stepEnd = curTour!.steps.length - 1
     fileTab = []
 
-    const ws = Vsc.workspace.workspaceFolders?.[0]?.uri
-    if (!ws) return
-
     for (let fn of curTour!.files ?? []) {
-        fileTab.push({ uri: Vsc.Uri.joinPath(ws, 'workspace', fn.replace(':', '/')) })
+        const baseUri = fn.startsWith('.') ? Utils.toursUri() : Utils.workUri()
+        fileTab.push({ uri: Vsc.Uri.joinPath(baseUri, fn.replace(':', '/')) })
     }
 
     Vsc.window.tabGroups.all.forEach(tg => Vsc.window.tabGroups.close(tg))
@@ -209,9 +205,6 @@ export async function start(uri: Vsc.Uri, devmode?: boolean) {
 
 async function execCmds() {
     const cmds = curTour!.steps[stepIdx].cmds ?? []
-    console.log(`${cmds.length} cmds`)
-
-    console.log(cmds.length)
     try {
         for (let cmd of cmds) {
             let segs = cmd.trim().split(/\s+/)
@@ -232,6 +225,11 @@ async function execCmds() {
                     file!.doc = await Vsc.workspace.openTextDocument(file!.uri)
                     await Vsc.window.showTextDocument(file!.doc, DOC_OPTS)
                     if (!(curTour!.$dev)) await Vsc.commands.executeCommand('workbench.action.files.setActiveEditorReadonlyInSession')
+                    break
+                }
+                case 'view': {
+                    console.log(`*** view ${file!.uri.path}`)
+                    await Vsc.commands.executeCommand('vscode.open', file!.uri)
                     break
                 }
             }
@@ -382,9 +380,7 @@ function expandCmds(body: string, acts: ActionId[]): string {
             case 'ht': {
                 let sym = args[1].startsWith('$') ? dict.get(args[1]) : args[1]
                 // ⟪ ⟫
-                console.log(`*** before ${txt}`)
                 txt = txt.replace(/⟪\[(.+?)\](.*?)⟫/g, replFxn)
-                console.log(`*** after ${txt}`)
                 return `<h1><span class="material-symbols-outlined">${sym}</span>&nbsp;${txt}${buttons}</h1>`
             }
             case 'le':
