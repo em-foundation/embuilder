@@ -368,7 +368,8 @@ function expandCmds(body: string, acts: ActionId[]): string {
     const buttons = mkButtons(acts)
     const replFxn = ((s: string, g1: string, g2: string) => {
         let args = g1.split(',')
-        let txt = g2
+        // ⟪ ⟫
+        let txt = g2.replace(/⟪\[(.+?)\](.*?)⟫/g, replFxn)
         switch (args[0]) {
             case 'bi':
                 return `<span class="cmd-bi"><span class="material-symbols-outlined">${args[1]}</span></span>`
@@ -387,10 +388,10 @@ function expandCmds(body: string, acts: ActionId[]): string {
             case 'cu':
             case 'cx':
                 return `<code class="cmd-${args[0]}">${txt}</code>`
+            case 'em':
+                return `<span class="em">${txt}</span>`
             case 'ht': {
                 let sym = args[1].startsWith('$') ? dict.get(args[1]) : args[1]
-                // ⟪ ⟫
-                txt = txt.replace(/⟪\[(.+?)\](.*?)⟫/g, replFxn)
                 return `<h1><span class="material-symbols-outlined">${sym}</span>&nbsp;${txt}${buttons}</h1>`
             }
             case 'le':

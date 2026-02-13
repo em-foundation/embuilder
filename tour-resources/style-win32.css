@@ -79,7 +79,12 @@ span.em-actions {
     position: absolute;
     right: 0;
     bottom: 0;   /* aligns to baseline area */
-}    
+}
+
+span.em {
+    color: var(--main-color);
+    font-weight: bold;
+}
 
 a {
     color: var(--main-color-darker);
@@ -100,6 +105,7 @@ a:focus {
 
 a.cmd-bu {
     color: var(--button-color);
+    font-weight: bold;
     position: relative;
 }
 

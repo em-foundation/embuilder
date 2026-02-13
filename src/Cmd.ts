@@ -276,5 +276,5 @@ export async function shutdown() {
 
 export async function startFirstTour() {
     await Vsc.commands.executeCommand('workbench.view.extension.emtours')
-    setTimeout(async () => { await TourGuide.start(ToursView.firstTour().resourceUri!) }, 250)
+    setTimeout(async () => { await TourGuide.start(ToursView.firstTour().resourceUri!) }, 1000)
 }
