@@ -48,6 +48,18 @@ div.em-seqn {
     width: 95%;
 }
 
+div.em-happy {
+    bottom: 10;
+    height: 20px;
+    color: hsl(0, 0%, 70%);
+    font-weight: bold;
+    font-size: 115%;
+    margin-top: 14px;
+    position: absolute;
+    text-align: right;
+    width: 95%;
+}
+
 h1 {
     color: hsl(0, 0%, 70%);
     font-weight: bold;
