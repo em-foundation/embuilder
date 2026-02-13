@@ -103,6 +103,10 @@
                 "title": "EM•Browser: Download wokwi.vcd"
             },
             {
+                "command": "embrowser.gotoPulseView",
+                "title": "EM•Browser: PulseView Download Site"
+            },
+            {
                 "command": "embrowser.showWelcome",
                 "title": "EM•Browser: Show Welcome"
             },

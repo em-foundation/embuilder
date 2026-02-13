@@ -126,6 +126,10 @@ export async function downloadVcd() {
     }
 }
 
+export async function gotoPulseView() {
+    await Vsc.env.openExternal(Vsc.Uri.parse('https://www.sigrok.org/wiki/Downloads'))
+}
+
 export async function initSetup() {
     const brd = Utils.getBoard()
     await StatusItems.boardC.set(brd ? brd : 'rpi.2040://PI_PICO-sim$$')
