@@ -162,6 +162,10 @@
                 "title": "Reveal in Explorer"
             },
             {
+                "command": "em.tour.open",
+                "title": "Open Tour in Editor"
+            },
+            {
                 "command": "em.tour.start",
                 "title": "EM•Browser: Start Tour"
             },
@@ -303,6 +307,10 @@
                     "when": "false"
                 },
                 {
+                    "command": "em.tour.open",
+                    "when": "false"
+                },
+                {
                     "command": "em.tour.start",
                     "when": "false"
                 },
@@ -396,6 +404,10 @@
                     "command": "em.newTemplate",
                     "group": "AAAemscript@2",
                     "when": "view == embrowser.content && viewItem == embrowser.bucket"
+                },
+                {
+                    "command": "em.tour.open",
+                    "when": "view == embrowser.tours && viewItem == em.tour"
                 },
                 {
                     "command": "em.tour.startdev",

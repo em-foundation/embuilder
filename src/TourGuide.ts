@@ -150,6 +150,11 @@ async function sync() {
     file.decorMap.forEach((v, k) => ted.setDecorations(v.type, [v.range]))
 }
 
+export async function open(uri: Vsc.Uri) {
+    await Vsc.commands.executeCommand('vscode.open', uri, OPEN_OPTS)
+
+}
+
 export async function start(uri: Vsc.Uri, devmode?: boolean) {
     uri = Vsc.Uri.parse(`file://${uri.path}`)
     if (!initFlag) {
@@ -398,6 +403,8 @@ function expandCmds(body: string, acts: ActionId[]): string {
             }
             case 'le':
                 return `<a class="cmd-le" href="${args[1]}"><span class="cmd-le">${txt}</a>`
+            case 'uc':
+                return '<div class="em-happy">🚧 Reopening Soon 🛠️</div>'
             default:
                 return `<span style="color:red">${s}</span>`
         }

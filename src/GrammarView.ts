@@ -26,7 +26,7 @@ export function prev() {
 export async function show() {
     const panel = Vsc.window.createWebviewPanel(
         'embrowser.grammar',
-        'EM•Script Grammar',
+        'EM•Script',
         Vsc.ViewColumn.Active,
         { enableScripts: true }
     )
@@ -40,7 +40,7 @@ export async function show() {
     document.addEventListener('click', (e) => {
         const btn = e.target?.closest?.('button[data-em]')
         if (btn) {
-            vscode.postMessage({ kind: 'cmd', id: btn.getAttribute('data-em') })
+            vscode.postMessage({ kind: 'cmd', id: btn.getAttribute('da-em') })
             e.preventDefault()
             e.stopPropagation()
             return
@@ -149,6 +149,7 @@ export async function show() {
     )
     panel.webview.html = html
     panel.reveal(Vsc.ViewColumn.One, true)
+    await Vsc.commands.executeCommand('workbench.action.pinEditor')
 
     panel.webview.onDidReceiveMessage((msg) => {
         if (msg!.kind == 'cmd') {

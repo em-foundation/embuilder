@@ -11,7 +11,7 @@ import * as Utils from './Utils'
 
 const ASSOCS = {
     '*.em.ts': 'typescript',
-    '*.emtour': 'markdown',
+    '*.emtour': 'yaml',
     'em-boards': 'yaml',
     'emtour-bundle': 'yaml',
 }
@@ -45,6 +45,11 @@ export async function activate(ctx: Vsc.ExtensionContext) {
         ctx.subscriptions.push(
             Vsc.commands.registerCommand('em.tour.startdev', async (node: Vsc.TreeItem) => {
                 await TourGuide.start(node.resourceUri!, true)
+            })
+        )
+        ctx.subscriptions.push(
+            Vsc.commands.registerCommand('em.tour.open', async (node: Vsc.TreeItem) => {
+                await TourGuide.open(Vsc.Uri.parse(`file://${node.resourceUri!.path}`))
             })
         )
         ctx.subscriptions.push(
