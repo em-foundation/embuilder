@@ -142,6 +142,22 @@
                 "icon": "icons/shutdown.svg"
             },
             {
+                "command": "emgrammar.next",
+                "title": "EM•Grammar: Next"
+            },
+            {
+                "command": "emgrammar.prev",
+                "title": "EM•Grammar: Prev"
+            },
+            {
+                "command": "emgrammar.show",
+                "title": "EM•Grammar: Show"
+            },
+            {
+                "command": "emgrammar.top",
+                "title": "EM•Grammar: Top"
+            },
+            {
                 "command": "emtours.revealInExplorer",
                 "title": "Reveal in Explorer"
             },

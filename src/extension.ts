@@ -2,6 +2,7 @@ import * as Vsc from 'vscode'
 
 import * as Cmd from './Cmd'
 import * as ContentView from './ContentView'
+import * as GrammarView from './GrammarView'
 import * as SemTok from './SemTok'
 import * as StatusItems from './StatusItems'
 import * as TourGuide from './TourGuide'
@@ -51,6 +52,11 @@ export async function activate(ctx: Vsc.ExtensionContext) {
                 await Cmd.revealExplorer(Vsc.Uri.parse(`file://${node.resourceUri!.path}`))
             })
         )
+
+        ctx.subscriptions.push(Vsc.commands.registerCommand('emgrammar.next', GrammarView.next))
+        ctx.subscriptions.push(Vsc.commands.registerCommand('emgrammar.prev', GrammarView.prev))
+        ctx.subscriptions.push(Vsc.commands.registerCommand('emgrammar.show', GrammarView.show))
+        ctx.subscriptions.push(Vsc.commands.registerCommand('emgrammar.top', GrammarView.top))
 
         ctx.subscriptions.push(Vsc.commands.registerCommand('embrowser.build', Cmd.build))
         ctx.subscriptions.push(Vsc.commands.registerCommand('embrowser.downloadVcd', Cmd.downloadVcd))

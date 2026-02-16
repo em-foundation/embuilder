@@ -391,7 +391,7 @@ function expandCmds(body: string, acts: ActionId[]): string {
             case 'em':
                 return `<span class="em">${txt}</span>`
             case 'hc':
-                return '<div class="em-happy">🙂&thinsp;Happy coding 💻</div>'
+                return '<div class="em-happy">🙂&nbsp;Happy coding&ensp;💻</div>'
             case 'ht': {
                 let sym = args[1].startsWith('$') ? dict.get(args[1]) : args[1]
                 return `<h1><span class="material-symbols-outlined">${sym}</span>&nbsp;${txt}${buttons}</h1>`
