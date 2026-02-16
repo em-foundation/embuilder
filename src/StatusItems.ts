@@ -151,7 +151,7 @@ function mkBoardNames(): string[] {
             const yobj = Yaml.load(String(Fs.readFileSync(bpath))) as Object
             for (const k of Object.keys(yobj)) {
                 if (k.startsWith('$')) continue
-                res.push(`${bn}://${k}`)
+                res.push(`${mkDistroPkg(bn)}://${k}`)
             }
         }
     }
