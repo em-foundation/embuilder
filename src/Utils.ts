@@ -263,8 +263,7 @@ export function writeLaunchScript() {
     const emRoot = Path.join(Os.homedir(), 'EM')
     const launchPath = Path.join(emRoot, 'launch.sh')
     Fs.writeFileSync(launchPath, `#!/usr/bin/env bash
-cd $HOME/EM/repo
-code --skip-welcome --user-data-dir "$HOME/EM/data" --extensions-dir "$HOME/EM/exts" emporium"
+code --skip-welcome --user-data-dir "$HOME/EM/data" --extensions-dir "$HOME/EM/exts" "$HOME/EM/repo/emporium"
 `)
     Fs.chmodSync(launchPath, 0o755)
 }
