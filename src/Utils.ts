@@ -4,6 +4,8 @@ import Os from 'os'
 import Path from 'path'
 import Vsc from 'vscode'
 
+export const EXT_ID = 'the-em-foundation.embrowser'
+
 export const PROP_BOARD = 'em.lang.BoardKind'
 export const PROP_DISTRO = 'em.lang.Distro'
 export const PROP_EXTENDS = 'em.lang.SetupExtends'
@@ -67,7 +69,7 @@ export function getVersCliFull(): string {
 }
 
 export function getVersExt(): string {
-    const ext = Vsc.extensions.getExtension('the-em-foundation.embuilder')
+    const ext = Vsc.extensions.getExtension(EXT_ID)
     const version = ext?.packageJSON.version
     return version
 }
@@ -261,10 +263,8 @@ export function writeLaunchScript() {
     const emRoot = Path.join(Os.homedir(), 'EM')
     const launchPath = Path.join(emRoot, 'launch.sh')
     Fs.writeFileSync(launchPath, `#!/usr/bin/env bash
-code --skip-welcome \\
-  --user-data-dir "$HOME/EM/data" \\
-  --extensions-dir "$HOME/EM/exts" \\
-  "$HOME/EM/repo/emporium"
+cd $HOME/EM/repo
+code --skip-welcome --user-data-dir "$HOME/EM/data" --extensions-dir "$HOME/EM/exts" emporium"
 `)
     Fs.chmodSync(launchPath, 0o755)
 }

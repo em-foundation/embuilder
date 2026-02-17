@@ -72,7 +72,7 @@ export async function show() {
         /<\/script>/i,
         `\n/* goto handler */\nwindow.addEventListener('message', (e) => {\n    const msg = e.data\n    if (msg?.kind !== 'goto') return\n    if (msg.hash === '#em-top') {\n        window.scrollTo({ top: 0, left: 0, behavior: 'instant' })\n        return\n    }\n    const hash = msg.hash\n    if (!hash || hash[0] !== '#') return\n    const el = document.getElementById(hash.slice(1))\n    if (el) el.scrollIntoView({ block: 'start', inline: 'nearest' })\n})\n\n</script>`
     )
-    const extUri = Vsc.extensions.getExtension('the-em-foundation.embuilder')!.extensionUri
+    const extUri = Vsc.extensions.getExtension(Utils.EXT_ID)!.extensionUri
     const backSVG = await Utils.readText(Vsc.Uri.joinPath(extUri, 'icons', 'back.svg'))
     const nextSVG = await Utils.readText(Vsc.Uri.joinPath(extUri, 'icons', 'next.svg'))
     const topSVG = await Utils.readText(Vsc.Uri.joinPath(extUri, 'icons', 'top.svg'))
