@@ -10,5 +10,28 @@
         ".extHost-extensions": false,
         ".extHost-userdata": false
     },
-    "explorerExclude.backup": {}
+    "explorerExclude.backup": {},
+    "breadcrumbs.enabled": false,
+    "editor.fontSize": 14,
+    "editor.formatOnSave": true,
+    "editor.minimap.enabled": false,
+    "files.associations": {
+        "*.em.ts": "typescript",
+        "*.emtour": "markdown",
+        "em-boards": "yaml",
+        "emtour-bundle": "yaml"
+    },
+    "typescript.disableAutomaticTypeAcquisition": true,
+    "typescript.tsserver.web.typeAcquisition.enabled": false,
+    "window.zoomLevel": -1,
+    "workbench.colorTheme": "Default Dark Modern",
+    "workbench.iconTheme": "vscode-icons",
+    "workbench.tree.indent": 20,
+    "[typescript]": {
+        "editor.defaultFormatter": "vscode.typescript-language-features"
+    },
+    "[typescriptreact]": {
+        "editor.defaultFormatter": "vscode.typescript-language-features"
+    },
+    "emscript.board": "rpi.2040://PI_PICO-sim$$"
 }

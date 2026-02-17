@@ -1,8 +1,8 @@
 import Cp from 'child_process'
 import Fs from 'fs'
+import Os from 'os'
 import Path from 'path'
 import Vsc from 'vscode'
-import Yaml from 'js-yaml'
 
 export const PROP_BOARD = 'em.lang.BoardKind'
 export const PROP_DISTRO = 'em.lang.Distro'
@@ -255,4 +255,16 @@ export function workPath(): string {
 
 export function workUri(): Vsc.Uri {
     return Vsc.Uri.joinPath(ROOT.uri, 'workspace')
+}
+
+export function writeLaunchScript() {
+    const emRoot = Path.join(Os.homedir(), 'EM')
+    const launchPath = Path.join(emRoot, 'launch.sh')
+    Fs.writeFileSync(launchPath, `#!/usr/bin/env bash
+code --skip-welcome \\
+  --user-data-dir "$HOME/EM/data" \\
+  --extensions-dir "$HOME/EM/exts" \\
+  "$HOME/EM/repo/emporium"
+`)
+    Fs.chmodSync(launchPath, 0o755)
 }

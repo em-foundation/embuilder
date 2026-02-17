@@ -130,6 +130,9 @@ export async function activate(ctx: Vsc.ExtensionContext) {
         await cfg.update('editor.formatOnSave', true, Vsc.ConfigurationTarget.Workspace)
         await cfg.update('editor.minimap.enabled', false, Vsc.ConfigurationTarget.Workspace)
         await cfg.update('files.associations', ASSOCS, Vsc.ConfigurationTarget.Workspace)
+        await cfg.update('terminal.integrated.defaultProfile.linux', 'Bash', Vsc.ConfigurationTarget.Workspace)
+        await cfg.update('terminal.integrated.defaultProfile.osx', 'Bash', Vsc.ConfigurationTarget.Workspace)
+        await cfg.update('terminal.integrated.defaultProfile.windows', 'Git Bash', Vsc.ConfigurationTarget.Workspace)
         await cfg.update('typescript.disableAutomaticTypeAcquisition', true, Vsc.ConfigurationTarget.Workspace)
         await cfg.update('typescript.tsserver.web.typeAcquisition.enabled', false, Vsc.ConfigurationTarget.Workspace)
         await cfg.update('window.zoomLevel', -1, Vsc.ConfigurationTarget.Workspace)
@@ -143,12 +146,18 @@ export async function activate(ctx: Vsc.ExtensionContext) {
             'editor.defaultFormatter': 'vscode.typescript-language-features'
         }, Vsc.ConfigurationTarget.Workspace)
 
+        const termProf = process.platform === 'win32' ? 'Git Bash' : 'Bash'
+
         StatusItems.init(ctx)
         ctx.subscriptions.push(Vsc.commands.registerCommand("em.bindBoard", Cmd.bindBoard))
         ctx.subscriptions.push(Vsc.commands.registerCommand("em.bindSetup", Cmd.bindSetup))
 
         Utils.refreshProps()
         await Cmd.initSetup()
+
+        Utils.writeLaunchScript()
+
+        Vsc.commands.executeCommand('workbench.action.terminal.focus')
 
         Cmd.showWelcome()
         Vsc.window.showInformationMessage(`EM•Browser activated (v${Utils.getVersExt()})`)
