@@ -15,7 +15,7 @@ export function getNode(uri: Vsc.Uri): Node | undefined {
 
 export function init(ctx: Vsc.ExtensionContext) {
     curView = new Provider(ctx.extensionUri)
-    curTree = Vsc.window.createTreeView('embrowser.content', {
+    curTree = Vsc.window.createTreeView('embuilder.content', {
         treeDataProvider: curView
     })
     ctx.subscriptions.push(curTree)
@@ -121,12 +121,12 @@ export class Provider implements Vsc.TreeDataProvider<Node> {
         if (!element) {
             const item = new Node(null, 'workspace', wsUri, 'EM•Script Source', Vsc.TreeItemCollapsibleState.Expanded)
             item.iconPath = this.icon('icons/source.png')
-            item.contextValue = 'embrowser.workspace'
+            item.contextValue = 'embuilder.workspace'
             const outUri = Vsc.Uri.joinPath(wsUri, '.emscript')
             if (!await uriExists(outUri)) return [item]
             const item2 = new Node(null, 'build', outUri, 'EM•Script Output', Vsc.TreeItemCollapsibleState.Collapsed)
             item2.iconPath = this.icon('icons/output.png')
-            item2.contextValue = 'embrowser.build'
+            item2.contextValue = 'embuilder.build'
             return [item, item2]
         }
 
@@ -137,7 +137,7 @@ export class Provider implements Vsc.TreeDataProvider<Node> {
                 const pkgUri = Vsc.Uri.joinPath(element.uri, name)
                 const item = new Node(element, 'package', pkgUri, name, Vsc.TreeItemCollapsibleState.Collapsed)
                 item.iconPath = this.icon('icons/package.svg')
-                item.contextValue = 'embrowser.package'
+                item.contextValue = 'embuilder.package'
                 return item
             })
         }
@@ -149,7 +149,7 @@ export class Provider implements Vsc.TreeDataProvider<Node> {
                 const bucketUri = Vsc.Uri.joinPath(element.uri, name)
                 const item = new Node(element, 'bucket', bucketUri, name, Vsc.TreeItemCollapsibleState.Collapsed)
                 item.iconPath = this.icon('icons/bucket.svg')
-                item.contextValue = 'embrowser.bucket'
+                item.contextValue = 'embuilder.bucket'
                 return item
             })
         }
@@ -164,13 +164,13 @@ export class Provider implements Vsc.TreeDataProvider<Node> {
                 if ((type & Vsc.FileType.Directory) !== 0) {
                     const item = new Node(element, 'dir', uri, name, Vsc.TreeItemCollapsibleState.Collapsed)
                     item.iconPath = this.icon('icons/folder.svg')
-                    item.contextValue = 'embrowser.dir'
+                    item.contextValue = 'embuilder.dir'
                     return item
                 }
 
                 const item = new Node(element, 'file', uri, name, Vsc.TreeItemCollapsibleState.None)
                 item.iconPath = this.fileIcon(name)
-                item.contextValue = (name.endsWith('.em.ts')) ? 'embrowser.unit' : 'embrowser.file'
+                item.contextValue = (name.endsWith('.em.ts')) ? 'embuilder.unit' : 'embuilder.file'
                 item.command = {
                     command: 'vscode.open',
                     title: '',

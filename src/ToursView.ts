@@ -18,7 +18,7 @@ export function firstTour(): TourNode {
 
 export function init(ctx: Vsc.ExtensionContext) {
     curView = new Provider(ctx.extensionUri)
-    curTree = Vsc.window.createTreeView('embrowser.tours', {
+    curTree = Vsc.window.createTreeView('embuilder.tours', {
         treeDataProvider: curView
     })
     ctx.subscriptions.push(curTree)
@@ -57,7 +57,7 @@ export class Provider implements Vsc.TreeDataProvider<TourNode> {
             const state = bflg ? Vsc.TreeItemCollapsibleState.None : curFirstBundle ? Vsc.TreeItemCollapsibleState.Collapsed : Vsc.TreeItemCollapsibleState.Expanded
             const item = new Vsc.TreeItem(uri, state)
             curFirstBundle ??= item
-            item.resourceUri = Vsc.Uri.parse(`embrowser-tour:${uri.path}`)  // synthetic
+            item.resourceUri = Vsc.Uri.parse(`embuilder-tour:${uri.path}`)  // synthetic
             item.contextValue = !bflg ? 'em.tour.bundle' : 'em.tour'
             item.label = meta.title
             item.tooltip = meta.description ?? '<TBD>'

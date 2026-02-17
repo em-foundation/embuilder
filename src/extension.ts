@@ -39,7 +39,7 @@ export async function activate(ctx: Vsc.ExtensionContext) {
         ctx.subscriptions.push(Vsc.commands.registerCommand('em.tour.restart', TourGuide.restart))
 
         ContentView.init(ctx)
-        await Utils.focusBrowser()
+        await Utils.focusBuilder()
 
         ToursView.init(ctx)
         ctx.subscriptions.push(
@@ -63,21 +63,21 @@ export async function activate(ctx: Vsc.ExtensionContext) {
         ctx.subscriptions.push(Vsc.commands.registerCommand('emgrammar.show', GrammarView.show))
         ctx.subscriptions.push(Vsc.commands.registerCommand('emgrammar.top', GrammarView.top))
 
-        ctx.subscriptions.push(Vsc.commands.registerCommand('embrowser.build', Cmd.build))
-        ctx.subscriptions.push(Vsc.commands.registerCommand('embrowser.downloadVcd', Cmd.downloadVcd))
-        ctx.subscriptions.push(Vsc.commands.registerCommand('embrowser.gotoPulseView', Cmd.gotoPulseView))
-        ctx.subscriptions.push(Vsc.commands.registerCommand('embrowser.refresh', Cmd.refresh))
-        ctx.subscriptions.push(Vsc.commands.registerCommand('embrowser.revealActiveUnit', Cmd.revealUnit))
-        ctx.subscriptions.push(Vsc.commands.registerCommand('embrowser.showWelcome', Cmd.showWelcome))
-        ctx.subscriptions.push(Vsc.commands.registerCommand('embrowser.shutdown', Cmd.shutdown))
-        ctx.subscriptions.push(Vsc.commands.registerCommand('embrowser.startFirstTour', Cmd.startFirstTour))
+        ctx.subscriptions.push(Vsc.commands.registerCommand('embuilder.build', Cmd.build))
+        ctx.subscriptions.push(Vsc.commands.registerCommand('embuilder.downloadVcd', Cmd.downloadVcd))
+        ctx.subscriptions.push(Vsc.commands.registerCommand('embuilder.gotoPulseView', Cmd.gotoPulseView))
+        ctx.subscriptions.push(Vsc.commands.registerCommand('embuilder.refresh', Cmd.refresh))
+        ctx.subscriptions.push(Vsc.commands.registerCommand('embuilder.revealActiveUnit', Cmd.revealUnit))
+        ctx.subscriptions.push(Vsc.commands.registerCommand('embuilder.showWelcome', Cmd.showWelcome))
+        ctx.subscriptions.push(Vsc.commands.registerCommand('embuilder.shutdown', Cmd.shutdown))
+        ctx.subscriptions.push(Vsc.commands.registerCommand('embuilder.startFirstTour', Cmd.startFirstTour))
         ctx.subscriptions.push(
-            Vsc.commands.registerCommand('embrowser.revealInExplorer', async (node: ContentView.Node) => {
+            Vsc.commands.registerCommand('embuilder.revealInExplorer', async (node: ContentView.Node) => {
                 await Cmd.revealExplorer(node.uri)
             })
         )
         ctx.subscriptions.push(
-            Vsc.commands.registerCommand('embrowser.remove', async (node: ContentView.Node) => {
+            Vsc.commands.registerCommand('embuilder.remove', async (node: ContentView.Node) => {
                 await Cmd.remove(node)
             })
         )
@@ -117,7 +117,7 @@ export async function activate(ctx: Vsc.ExtensionContext) {
         )
 
         ctx.subscriptions.push(
-            Vsc.commands.registerCommand('embrowser.openReadonly', async (uri: Vsc.Uri) => {
+            Vsc.commands.registerCommand('embuilder.openReadonly', async (uri: Vsc.Uri) => {
                 await Vsc.commands.executeCommand('vscode.open', uri, { preview: true })
                 await Vsc.commands.executeCommand('workbench.action.files.setActiveEditorReadonlyInSession')
             })
@@ -160,7 +160,7 @@ export async function activate(ctx: Vsc.ExtensionContext) {
         Vsc.commands.executeCommand('workbench.action.terminal.focus')
 
         Cmd.showWelcome()
-        Vsc.window.showInformationMessage(`EM•Browser activated (v${Utils.getVersExt()})`)
+        Vsc.window.showInformationMessage(`EM•Builder activated (v${Utils.getVersExt()})`)
 
         // avoid dropdown
         setTimeout(async () => {
@@ -173,7 +173,7 @@ export async function activate(ctx: Vsc.ExtensionContext) {
 
     } catch (e) {
         console.log('*** activate: fail')
-        Vsc.window.showWarningMessage(`embrowser activate failed: ${String(e)}`)
+        Vsc.window.showWarningMessage(`embuilder activate failed: ${String(e)}`)
     }
 
     console.log('*** activate: end')

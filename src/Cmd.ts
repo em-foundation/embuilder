@@ -119,7 +119,7 @@ export async function downloadVcd() {
         if (r === 'OK') {
             StatusItems.vcdC.start()
         } else {
-            await Utils.focusBrowser()
+            await Utils.focusBuilder()
         }
     } finally {
         downloadBusy = false
@@ -158,7 +158,7 @@ export async function refresh() {
     ContentView.refresh()
     await Vsc.commands.executeCommand('typescript.restartTsServer')
     Utils.refreshProps()
-    Vsc.window.showInformationMessage(`EM•Browser refreshed`)
+    Vsc.window.showInformationMessage(`EM•Builder refreshed`)
 }
 
 export async function remove(node: ContentView.Node) {
@@ -204,11 +204,10 @@ export async function revealExplorer(uri: Vsc.Uri) {
 let welcomePanel: Vsc.WebviewPanel | undefined
 
 export async function showWelcome() {
-    console.log(`*** welcome ${welcomePanel}`)
     if (!welcomePanel) {
 
         const panel = Vsc.window.createWebviewPanel(
-            'embrowser.welcome',
+            'embuilder.welcome',
             'EM•Home',
             Vsc.ViewColumn.One,
             { enableScripts: true, retainContextWhenHidden: true }
@@ -246,7 +245,7 @@ ${cssText}
 <body>
 <div class="frame">
     <div class="logo">
-        <img src="${logoUri}" alt="EM•Browser">
+        <img src="${logoUri}" alt="EM•Builder">
     </div>
 ${bodyText}
 </div>
@@ -271,7 +270,7 @@ ${bodyText}
 
 export async function shutdown() {
     const r = await Vsc.window.showWarningMessage(
-        `Shutdown EM•Browser`,
+        `Shutdown EM•Builder`,
         { modal: true },
         'OK'
     )

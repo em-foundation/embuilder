@@ -1,6 +1,6 @@
 {
-    "name": "embrowser",
-    "displayName": "EM•Browser",
+    "name": "embuilder",
+    "displayName": "EM•Builder",
     "description": "VS Code support for EM•Script",
     "version": "26.0.32",
     "publisher": "the-em-foundation",
@@ -9,7 +9,7 @@
     "homepage": "https://openem.org",
     "repository": {
         "type": "git",
-        "url": "https://github.com/em-foundation/embrowser"
+        "url": "https://github.com/em-foundation/embuilder"
     },
     "engines": {
         "vscode": "^1.80.0"
@@ -43,11 +43,11 @@
         "commands": [
             {
                 "command": "em.bindBoard",
-                "title": "EM•Browser: Bind Board..."
+                "title": "EM•Builder: Bind Board..."
             },
             {
                 "command": "em.bindSetup",
-                "title": "EM•Browser: Bind Setup..."
+                "title": "EM•Builder: Bind Setup..."
             },
             {
                 "command": "em.build",
@@ -94,51 +94,51 @@
                 "title": "EM – New Template..."
             },
             {
-                "command": "embrowser.build",
+                "command": "embuilder.build",
                 "title": "EM – Build and Load",
                 "icon": "icons/load.svg"
             },
             {
-                "command": "embrowser.downloadVcd",
-                "title": "EM•Browser: Download wokwi.vcd"
+                "command": "embuilder.downloadVcd",
+                "title": "EM•Builder: Download wokwi.vcd"
             },
             {
-                "command": "embrowser.gotoPulseView",
-                "title": "EM•Browser: PulseView Download Site"
+                "command": "embuilder.gotoPulseView",
+                "title": "EM•Builder: PulseView Download Site"
             },
             {
-                "command": "embrowser.showWelcome",
-                "title": "EM•Browser: Show Welcome"
+                "command": "embuilder.showWelcome",
+                "title": "EM•Builder: Show Welcome"
             },
             {
-                "command": "embrowser.startFirstTour",
-                "title": "EM•Browser: Start first tour"
+                "command": "embuilder.startFirstTour",
+                "title": "EM•Builder: Start first tour"
             },
             {
-                "command": "embrowser.openReadonly",
+                "command": "embuilder.openReadonly",
                 "title": "Open Readonly",
                 "icon": "$(target)"
             },
             {
-                "command": "embrowser.refresh",
-                "title": "EM•Browser: Refresh"
+                "command": "embuilder.refresh",
+                "title": "EM•Builder: Refresh"
             },
             {
-                "command": "embrowser.remove",
+                "command": "embuilder.remove",
                 "title": "Remove"
             },
             {
-                "command": "embrowser.revealInExplorer",
+                "command": "embuilder.revealInExplorer",
                 "title": "Reveal in Explorer"
             },
             {
-                "command": "embrowser.revealActiveUnit",
+                "command": "embuilder.revealActiveUnit",
                 "title": "Reveal Active Unit",
                 "icon": "icons/target.svg"
             },
             {
-                "command": "embrowser.shutdown",
-                "title": "EM•Browser: Shutdown",
+                "command": "embuilder.shutdown",
+                "title": "EM•Builder: Shutdown",
                 "icon": "icons/shutdown.svg"
             },
             {
@@ -167,7 +167,7 @@
             },
             {
                 "command": "em.tour.start",
-                "title": "EM•Browser: Start Tour"
+                "title": "EM•Builder: Start Tour"
             },
             {
                 "command": "em.tour.startdev",
@@ -295,15 +295,15 @@
                     "when": "false"
                 },
                 {
-                    "command": "embrowser.openReadonly",
+                    "command": "embuilder.openReadonly",
                     "when": "false"
                 },
                 {
-                    "command": "embrowser.revealInExplorer",
+                    "command": "embuilder.revealInExplorer",
                     "when": "false"
                 },
                 {
-                    "command": "embrowser.remove",
+                    "command": "embuilder.remove",
                     "when": "false"
                 },
                 {
@@ -341,102 +341,102 @@
             ],
             "view/item/context": [
                 {
-                    "command": "embrowser.revealInExplorer",
+                    "command": "embuilder.revealInExplorer",
                     "group": "ZZZnavigation@10",
-                    "when": "view == embrowser.content"
+                    "when": "view == embuilder.content"
                 },
                 {
-                    "command": "embrowser.remove",
+                    "command": "embuilder.remove",
                     "group": "ZZZnavigation@10",
-                    "when": "view == embrowser.content && (viewItem == embrowser.unit || viewItem == embrowser.bucket || viewItem == embrowser.package)"
+                    "when": "view == embuilder.content && (viewItem == embuilder.unit || viewItem == embuilder.bucket || viewItem == embuilder.package)"
                 },
                 {
                     "command": "em.build",
                     "group": "AAAemscript@2",
-                    "when": "view == embrowser.content && viewItem == embrowser.unit"
+                    "when": "view == embuilder.content && viewItem == embuilder.unit"
                 },
                 {
                     "command": "em.buildLoad",
                     "group": "AAAemscript@2",
-                    "when": "view == embrowser.content && viewItem == embrowser.unit"
+                    "when": "view == embuilder.content && viewItem == embuilder.unit"
                 },
                 {
                     "command": "em.buildMeta",
                     "group": "AAAemscript@2",
-                    "when": "view == embrowser.content && viewItem == embrowser.unit"
+                    "when": "view == embuilder.content && viewItem == embuilder.unit"
                 },
                 {
                     "command": "em.clean",
                     "group": "AAAemscript@2",
-                    "when": "view == embrowser.content && viewItem == embrowser.build"
+                    "when": "view == embuilder.content && viewItem == embuilder.build"
                 },
                 {
                     "command": "em.newBucket",
                     "group": "AAAemscript@2",
-                    "when": "view == embrowser.content && viewItem == embrowser.package"
+                    "when": "view == embuilder.content && viewItem == embuilder.package"
                 },
                 {
                     "command": "em.newComposite",
                     "group": "AAAemscript@2",
-                    "when": "view == embrowser.content && viewItem == embrowser.bucket"
+                    "when": "view == embuilder.content && viewItem == embuilder.bucket"
                 },
                 {
                     "command": "em.newInterface",
                     "group": "AAAemscript@2",
-                    "when": "view == embrowser.content && viewItem == embrowser.bucket"
+                    "when": "view == embuilder.content && viewItem == embuilder.bucket"
                 },
                 {
                     "command": "em.newModule",
                     "group": "AAAemscript@2",
-                    "when": "view == embrowser.content && viewItem == embrowser.bucket"
+                    "when": "view == embuilder.content && viewItem == embuilder.bucket"
                 },
                 {
                     "command": "em.newPackage",
                     "group": "AAAemscript@2",
-                    "when": "view == embrowser.content && viewItem == embrowser.workspace"
+                    "when": "view == embuilder.content && viewItem == embuilder.workspace"
                 },
                 {
                     "command": "em.newProgram",
                     "group": "AAAemscript@2",
-                    "when": "view == embrowser.content && viewItem == embrowser.bucket"
+                    "when": "view == embuilder.content && viewItem == embuilder.bucket"
                 },
                 {
                     "command": "em.newTemplate",
                     "group": "AAAemscript@2",
-                    "when": "view == embrowser.content && viewItem == embrowser.bucket"
+                    "when": "view == embuilder.content && viewItem == embuilder.bucket"
                 },
                 {
                     "command": "em.tour.open",
-                    "when": "view == embrowser.tours && viewItem == em.tour"
+                    "when": "view == embuilder.tours && viewItem == em.tour"
                 },
                 {
                     "command": "em.tour.startdev",
-                    "when": "view == embrowser.tours && viewItem == em.tour"
+                    "when": "view == embuilder.tours && viewItem == em.tour"
                 },
                 {
                     "command": "emtours.revealInExplorer",
-                    "when": "view == embrowser.tours && viewItem == em.tour.bundle"
+                    "when": "view == embuilder.tours && viewItem == em.tour.bundle"
                 }
             ],
             "view/title": [
                 {
-                    "command": "embrowser.build",
-                    "when": "view == embrowser.content",
+                    "command": "embuilder.build",
+                    "when": "view == embuilder.content",
                     "group": "navigation@1"
                 },
                 {
-                    "command": "embrowser.refresh",
-                    "when": "view == embrowser.content",
+                    "command": "embuilder.refresh",
+                    "when": "view == embuilder.content",
                     "group": "zzz_none"
                 },
                 {
-                    "command": "embrowser.revealActiveUnit",
-                    "when": "view == embrowser.content",
+                    "command": "embuilder.revealActiveUnit",
+                    "when": "view == embuilder.content",
                     "group": "navigation@2"
                 },
                 {
-                    "command": "embrowser.shutdown",
-                    "when": "view == embrowser.content",
+                    "command": "embuilder.shutdown",
+                    "when": "view == embuilder.content",
                     "group": "navigation@3"
                 },
                 {
@@ -469,8 +469,8 @@
         "viewsContainers": {
             "activitybar": [
                 {
-                    "id": "embrowser",
-                    "title": "EM•Browser",
+                    "id": "embuilder",
+                    "title": "EM•Builder",
                     "icon": "icons/logo-mono.svg"
                 },
                 {
@@ -481,9 +481,9 @@
             ]
         },
         "views": {
-            "embrowser": [
+            "embuilder": [
                 {
-                    "id": "embrowser.content",
+                    "id": "embuilder.content",
                     "name": "Content",
                     "icon": ""
                 },
@@ -497,7 +497,7 @@
             ],
             "emtours": [
                 {
-                    "id": "embrowser.tours",
+                    "id": "embuilder.tours",
                     "name": "Tours",
                     "icon": ""
                 }

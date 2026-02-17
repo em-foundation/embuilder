@@ -121,7 +121,7 @@ export const vcdC = new class Download {
     async stop() {
         if (this.timeout) clearTimeout(this.timeout)
         this.status.hide()
-        await Utils.focusBrowser()
+        await Utils.focusBuilder()
     }
     uri() {
         return Vsc.Uri.joinPath(Utils.rootUri(), Download.VCD_FILE)

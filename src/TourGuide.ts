@@ -162,7 +162,7 @@ export async function start(uri: Vsc.Uri, devmode?: boolean) {
         curCtx.subscriptions.push(Vsc.window.registerWebviewViewProvider(ViewProvider.ID, new ViewProvider(curCtx)))
     }
     Vsc.commands.executeCommand('setContext', 'em-builder.activeTour', true)
-    await Vsc.commands.executeCommand('workbench.view.extension.embrowser')
+    await Vsc.commands.executeCommand('workbench.view.extension.embuilder')
     await Vsc.commands.executeCommand(`${ViewProvider.ID}.focus`)
 
     let src = await Utils.readText(uri)
@@ -197,7 +197,7 @@ export async function start(uri: Vsc.Uri, devmode?: boolean) {
     }
 
     await closeAllExceptWelcome()
-    await Vsc.commands.executeCommand('embrowser.showWelcome')
+    await Vsc.commands.executeCommand('embuilder.showWelcome')
 
     if (curTour!.$dev) {
         await Vsc.window.showTextDocument(uri, { viewColumn: 2 })
@@ -246,7 +246,7 @@ async function closeAllExceptWelcome() {
     for (const group of Vsc.window.tabGroups.all) {
         const toClose = group.tabs.filter(t => {
             const input = (t as any).input
-            return input?.viewType !== 'embrowser.welcome'
+            return input?.viewType !== 'embuilder.welcome'
         })
         if (toClose.length)
             await Vsc.window.tabGroups.close(toClose, true)
@@ -414,8 +414,8 @@ function expandCmds(body: string, acts: ActionId[]): string {
 
 function mkButtons(acts: ActionId[]): string {
     const std_actions = new Map<string, string>([
-        ['$build', 'embrowser.build|build|build/load this file using EM•Script'],
-        ['$reveal', 'embrowser.revealActiveUnit|target|reveal this file in EM•Browser'],
+        ['$build', 'embuilder.build|build|build/load this file using EM•Script'],
+        ['$reveal', 'embuilder.revealActiveUnit|target|reveal this file in EM•Builder'],
     ])
     let res = '<span class="em-actions">'
     for (const aid of acts) {

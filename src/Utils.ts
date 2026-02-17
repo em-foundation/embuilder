@@ -34,9 +34,9 @@ const loggerC = new class Logger {
     }
 }
 
-export async function focusBrowser() {
-    await Vsc.commands.executeCommand('workbench.view.extension.embrowser')
-    await Vsc.commands.executeCommand('embrowser.content.focus')
+export async function focusBuilder() {
+    await Vsc.commands.executeCommand('workbench.view.extension.embuilder')
+    await Vsc.commands.executeCommand('embuilder.content.focus')
 }
 
 export function getBoard(): string {
@@ -67,7 +67,7 @@ export function getVersCliFull(): string {
 }
 
 export function getVersExt(): string {
-    const ext = Vsc.extensions.getExtension('the-em-foundation.embrowser')
+    const ext = Vsc.extensions.getExtension('the-em-foundation.embuilder')
     const version = ext?.packageJSON.version
     return version
 }
