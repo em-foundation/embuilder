@@ -2,7 +2,7 @@
     "name": "embrowser",
     "displayName": "EM•Builder",
     "description": "VS Code support for EM•Script",
-    "version": "26.0.35",
+    "version": "26.0.37",
     "publisher": "the-em-foundation",
     "icon": "icons/logo12.png",
     "license": "MIT",
@@ -121,7 +121,8 @@
             },
             {
                 "command": "embuilder.refresh",
-                "title": "EM•Builder: Refresh"
+                "title": "Refresh",
+                "icon": "icons/refresh.svg"
             },
             {
                 "command": "embuilder.remove",
@@ -137,9 +138,8 @@
                 "icon": "icons/target.svg"
             },
             {
-                "command": "embuilder.shutdown",
-                "title": "EM•Builder: Shutdown",
-                "icon": "icons/shutdown.svg"
+                "command": "embuilder.reset",
+                "title": "EM•Builder: Reset"
             },
             {
                 "command": "emgrammar.next",
@@ -427,17 +427,12 @@
                 {
                     "command": "embuilder.refresh",
                     "when": "view == embuilder.content",
-                    "group": "zzz_none"
+                    "group": "navigation@3"
                 },
                 {
                     "command": "embuilder.revealActiveUnit",
                     "when": "view == embuilder.content",
                     "group": "navigation@2"
-                },
-                {
-                    "command": "embuilder.shutdown",
-                    "when": "view == embuilder.content",
-                    "group": "navigation@3"
                 },
                 {
                     "command": "em.tour.prev",
