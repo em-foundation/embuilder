@@ -12,7 +12,7 @@ html {
 
 body {
     font-family: 'Calibri';
-    font-size: 105%;
+    font-size: 1.05em;
     padding: 0;
 }
 
@@ -31,7 +31,7 @@ div.em-frame {
 div.em-title {
     bottom: 0;
     color: var(--main-color);
-    font-size: 80%;
+    font-size: 0.8em;
     height: 20px;
     position: absolute;
     text-align: left;
@@ -41,7 +41,7 @@ div.em-title {
 div.em-seqn {
     bottom: 0;
     color: var(--main-color);
-    font-size: 80%;
+    font-size: 0.8em;
     height: 20px;
     position: absolute;
     text-align: right;
@@ -53,7 +53,7 @@ div.em-happy {
     height: 20px;
     color: hsl(0, 0%, 70%);
     font-weight: bold;
-    font-size: 115%;
+    font-size: 1.15em;
     margin-top: 14px;
     position: absolute;
     text-align: right;
@@ -63,7 +63,7 @@ div.em-happy {
 h1 {
     color: hsl(0, 0%, 70%);
     font-weight: bold;
-    font-size: 120%;
+    font-size: 1.2em;
     margin: 0;
     margin-left: -5px;
     margin-bottom: 25px;
@@ -74,15 +74,20 @@ p {
     margin: 15px 0;
 }
 
+span.cb {
+    color: var(--button-color); 
+    font-size: 0.85em !important;   
+}
+
 span.material-symbols-outlined {
     color: var(--main-color);
-    font-size: 135%;
+    font-size: 1.35em;
     vertical-align: bottom;
 }
 
 span.cmd-bi span.material-symbols-outlined {
     color: #9cdcfe !important;
-    font-size: 105%;
+    font-size: 1.05em;
     padding-bottom: 2px;
     padding-right: 3px;
 }
@@ -107,7 +112,7 @@ a {
 
 a[href^="http"]::after {
     content: "\29C9\2009";
-    font-size: 70%;
+    font-size: 0.7em;
     margin-left: 2px;
 }
 

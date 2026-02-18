@@ -16,6 +16,7 @@ interface File {
     readonly uri: Vsc.Uri
     doc?: Vsc.TextDocument
     decorMap?: Map<string, Decor>
+    openedTab?: Vsc.Tab
 }
 
 interface Step {
@@ -216,11 +217,11 @@ async function execCmds() {
             let segs = cmd.trim().split(/\s+/)
             let file = segs.length > 1 && Number(segs[1]) ? fileTab[Number(segs[1]) - 1] : null
             switch (segs[0]) {
-                case 'build': {
-                    // TODO: if (!(curTour!.$dev)) Cmd.build(file!.uri, segs.slice(2))
-                    break
-                }
                 case 'close': {
+                    if (file!.openedTab) {
+                        await Vsc.window.tabGroups.close(file!.openedTab)
+                        file!.openedTab = undefined
+                    }
                     break
                 }
                 case 'mark': {
@@ -230,11 +231,13 @@ async function execCmds() {
                 case 'open': {
                     file!.doc = await Vsc.workspace.openTextDocument(file!.uri)
                     await Vsc.window.showTextDocument(file!.doc, OPEN_OPTS)
+                    file!.openedTab = Vsc.window.tabGroups.activeTabGroup.activeTab
                     if (!(curTour!.$dev)) await Vsc.commands.executeCommand('workbench.action.files.setActiveEditorReadonlyInSession')
                     break
                 }
                 case 'view': {
                     await Vsc.commands.executeCommand('vscode.open', file!.uri, OPEN_OPTS)
+                    file!.openedTab = Vsc.window.tabGroups.activeTabGroup.activeTab
                     break
                 }
             }
@@ -382,6 +385,8 @@ function expandCmds(body: string, acts: ActionId[]): string {
                 return `${BM_SVG.replace('$label', args[1])}&nbsp;`
             case 'bu':
                 return `<a class="cmd-bu" href="#" data-cmd="${args[2]}" title="${txt}"><span class="codicon codicon-${args[1]}"></span><span class="cmd-bu-label">${txt}</span></a>`
+            case 'cb':
+                return `<span class="cb codicon codicon-${args[1]}"></span>`
             case 'ci':
                 return `<span class="codicon codicon-${args[1]}"></span>`
             case 'cd':
@@ -414,7 +419,7 @@ function expandCmds(body: string, acts: ActionId[]): string {
 
 function mkButtons(acts: ActionId[]): string {
     const std_actions = new Map<string, string>([
-        ['$build', 'embuilder.build|build|build/load this file using EM•Script'],
+        ['$build', 'embuilder.build|build|build + load this file using EM•Script'],
         ['$reveal', 'embuilder.revealActiveUnit|target|reveal this file in EM•Builder'],
     ])
     let res = '<span class="em-actions">'
