@@ -28,6 +28,13 @@ div.em-frame {
     position: relative;
 }
 
+div.em-info {
+    border-left: 2px solid hsl(300, 75%, 50%);
+    padding-left: 12px;
+    margin-top: -6px;
+    margin-bottom: 6px;
+}
+
 div.em-title {
     bottom: 0;
     color: var(--main-color);
@@ -66,7 +73,7 @@ h1 {
     font-size: 1.2em;
     margin: 0;
     margin-left: -5px;
-    margin-bottom: 25px;
+    margin-bottom: 18px;
     position: relative;
 }
 
@@ -168,6 +175,10 @@ code.cmd-ck {
 
 code.cmd-cn {
     color: #9cdcfe;
+}
+
+code.cmd-cs {
+    color: #cd6f1c;
 }
 
 code.cmd-ct {

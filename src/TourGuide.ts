@@ -394,6 +394,7 @@ function expandCmds(body: string, acts: ActionId[]): string {
             case 'cf':
             case 'ck':
             case 'cn':
+            case 'cs':
             case 'ct':
             case 'cu':
             case 'cx':
@@ -405,6 +406,9 @@ function expandCmds(body: string, acts: ActionId[]): string {
             case 'ht': {
                 let sym = args[1].startsWith('$') ? dict.get(args[1]) : args[1]
                 return `<h1><span class="material-symbols-outlined">${sym}</span>&nbsp;${txt}${buttons}</h1>`
+            }
+            case 'in': {
+                return `<div class="em-info">${txt}</div>`
             }
             case 'le':
                 return `<a class="cmd-le" href="${args[1]}"><span class="cmd-le">${txt}</a>`
