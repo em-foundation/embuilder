@@ -16,6 +16,7 @@ interface File {
     readonly uri: Vsc.Uri
     doc?: Vsc.TextDocument
     decorMap?: Map<string, Decor>
+    clearDecors?: boolean
     openedTab?: Vsc.Tab
 }
 
@@ -59,6 +60,9 @@ const DecoratorFactory = new class DecoratorFactory {
         this.map.set(label, dt)
         return dt
     }
+    clear(file: File) {
+        file.clearDecors = true
+    }
     mark(file: File, label: string, line: number) {
         let decor: Decor = {
             type: this.create(label),
@@ -68,6 +72,10 @@ const DecoratorFactory = new class DecoratorFactory {
             file.decorMap = new Map<string, Decor>()
         }
         file.decorMap.set(label, decor)
+    }
+    reset(file: File) {
+        file.clearDecors = undefined
+        file.decorMap = undefined
     }
 }
 
@@ -147,8 +155,13 @@ async function sync() {
     let file = fileTab[step.focus[0] - 1]
     let ted = await Vsc.window.showTextDocument(file.doc!, OPEN_OPTS)
     ted.revealRange(mkRange(Number(step.focus[1])), Vsc.TextEditorRevealType.AtTop)
-    if (!file.decorMap) return
-    file.decorMap.forEach((v, k) => ted.setDecorations(v.type, [v.range]))
+    if (file.decorMap === undefined) return
+    if (file.clearDecors) {
+        file.decorMap.forEach((v, k) => ted.setDecorations(v.type, []))
+        DecoratorFactory.reset(file)
+    } else {
+        file.decorMap.forEach((v, k) => ted.setDecorations(v.type, [v.range]))
+    }
 }
 
 export async function open(uri: Vsc.Uri) {
@@ -217,6 +230,10 @@ async function execCmds() {
             let segs = cmd.trim().split(/\s+/)
             let file = segs.length > 1 && Number(segs[1]) ? fileTab[Number(segs[1]) - 1] : null
             switch (segs[0]) {
+                case 'clear': {
+                    DecoratorFactory.clear(file!)
+                    break
+                }
                 case 'close': {
                     if (file!.openedTab) {
                         await Vsc.window.tabGroups.close(file!.openedTab)
