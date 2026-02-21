@@ -394,7 +394,7 @@ function expandCmds(body: string, acts: ActionId[]): string {
     const replFxn = ((s: string, g1: string, g2: string) => {
         let args = g1.split(',')
         // ⟪ ⟫
-        let txt = g2.replace(/⟪\[(.+?)\](.*?)⟫/g, replFxn)
+        let txt = g2.replace(/%\[(.+?)\](.*?)%/g, replFxn)
         switch (args[0]) {
             case 'bi':
                 return `<span class="cmd-bi"><span class="material-symbols-outlined">${args[1]}</span></span>`
