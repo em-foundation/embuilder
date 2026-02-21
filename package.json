@@ -51,51 +51,51 @@
             },
             {
                 "command": "em.build",
-                "title": "EM – Build"
+                "title": "Build"
             },
             {
                 "command": "em.buildLoad",
-                "title": "EM – Build and Load"
+                "title": "Build and Load"
             },
             {
                 "command": "em.buildMeta",
-                "title": "EM – Build Meta-Program"
+                "title": "Build Meta-Program"
             },
             {
                 "command": "em.clean",
-                "title": "EM – Clean Workspace"
+                "title": "Clean Workspace"
             },
             {
                 "command": "em.newBucket",
-                "title": "EM – New Bucket..."
+                "title": "New Bucket..."
             },
             {
                 "command": "em.newComposite",
-                "title": "EM – New Composite..."
+                "title": "New Composite..."
             },
             {
                 "command": "em.newInterface",
-                "title": "EM – New Interface..."
+                "title": "New Interface..."
             },
             {
                 "command": "em.newModule",
-                "title": "EM – New Module..."
+                "title": "New Module..."
             },
             {
                 "command": "em.newPackage",
-                "title": "EM – New Package..."
+                "title": "New Package..."
             },
             {
                 "command": "em.newProgram",
-                "title": "EM – New Program..."
+                "title": "New Program..."
             },
             {
                 "command": "em.newTemplate",
-                "title": "EM – New Template..."
+                "title": "New Template..."
             },
             {
                 "command": "embuilder.build",
-                "title": "EM – Build and Load",
+                "title": "Build and Load",
                 "icon": "icons/load.svg"
             },
             {
