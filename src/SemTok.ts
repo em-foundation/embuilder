@@ -3,7 +3,7 @@ import * as Vsc from 'vscode'
 
 function addComments(doc: Vsc.TextDocument, builder: Vsc.SemanticTokensBuilder) {
     const txt = doc.getText()
-    const re = /^\/\/\>.+$/gm
+    const re = /\/\/\>.+$/gm
     let m
     while ((m = re.exec(txt)) !== null) {
         const start = doc.positionAt(m.index)

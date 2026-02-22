@@ -15,8 +15,8 @@ interface Decor {
 interface File {
     readonly uri: Vsc.Uri
     doc?: Vsc.TextDocument
+    ted?: Vsc.TextEditor
     decorMap?: Map<string, Decor>
-    clearDecors?: boolean
     openedTab?: Vsc.Tab
 }
 
@@ -61,7 +61,8 @@ const DecoratorFactory = new class DecoratorFactory {
         return dt
     }
     clear(file: File) {
-        file.clearDecors = true
+        file.decorMap!.forEach((v, k) => file!.ted!.setDecorations(v.type, []))
+        file.decorMap!.clear()
     }
     mark(file: File, label: string, line: number) {
         let decor: Decor = {
@@ -72,10 +73,6 @@ const DecoratorFactory = new class DecoratorFactory {
             file.decorMap = new Map<string, Decor>()
         }
         file.decorMap.set(label, decor)
-    }
-    reset(file: File) {
-        file.clearDecors = undefined
-        file.decorMap = undefined
     }
 }
 
@@ -156,12 +153,7 @@ async function sync() {
     let ted = await Vsc.window.showTextDocument(file.doc!, OPEN_OPTS)
     ted.revealRange(mkRange(Number(step.focus[1])), Vsc.TextEditorRevealType.AtTop)
     if (file.decorMap === undefined) return
-    if (file.clearDecors) {
-        file.decorMap.forEach((v, k) => ted.setDecorations(v.type, []))
-        DecoratorFactory.reset(file)
-    } else {
-        file.decorMap.forEach((v, k) => ted.setDecorations(v.type, [v.range]))
-    }
+    file.decorMap.forEach((v, k) => ted.setDecorations(v.type, [v.range]))
 }
 
 export async function open(uri: Vsc.Uri) {
@@ -231,7 +223,8 @@ async function execCmds() {
             let file = segs.length > 1 && Number(segs[1]) ? fileTab[Number(segs[1]) - 1] : null
             switch (segs[0]) {
                 case 'clear': {
-                    DecoratorFactory.clear(file!)
+                    file!.decorMap!.forEach((v, k) => file!.ted!.setDecorations(v.type, []))
+                    file!.decorMap!.clear()
                     break
                 }
                 case 'close': {
@@ -247,7 +240,7 @@ async function execCmds() {
                 }
                 case 'open': {
                     file!.doc = await Vsc.workspace.openTextDocument(file!.uri)
-                    await Vsc.window.showTextDocument(file!.doc, OPEN_OPTS)
+                    file!.ted = await Vsc.window.showTextDocument(file!.doc, OPEN_OPTS)
                     file!.openedTab = Vsc.window.tabGroups.activeTabGroup.activeTab
                     if (!(curTour!.$dev)) await Vsc.commands.executeCommand('workbench.action.files.setActiveEditorReadonlyInSession')
                     break
