@@ -40,7 +40,7 @@ export async function show() {
     document.addEventListener('click', (e) => {
         const btn = e.target?.closest?.('button[data-em]')
         if (btn) {
-            vscode.postMessage({ kind: 'cmd', id: btn.getAttribute('da-em') })
+            vscode.postMessage({ kind: 'cmd', id: btn.getAttribute('data-em') })
             e.preventDefault()
             e.stopPropagation()
             return
@@ -176,5 +176,4 @@ function push(anchor: string) {
 
 function goto(anchor: string) {
     curPanel!.webview.postMessage({ kind: 'goto', hash: anchor })
-
 }
