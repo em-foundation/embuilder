@@ -60,7 +60,7 @@ export class Provider implements Vsc.TreeDataProvider<TourNode> {
             item.resourceUri = Vsc.Uri.parse(`embuilder-tour:${uri.path}`)  // synthetic
             item.contextValue = !bflg ? 'em.tour.bundle' : 'em.tour'
             item.label = meta.title
-            item.tooltip = meta.description ?? '<TBD>'
+            item.tooltip = meta.description ?? new Vsc.MarkdownString(' ')
             item.iconPath = this.icon(!bflg ? 'icons/tour-bundle.svg' : 'icons/compass.png')
             if (bflg) {
                 item.command = {
