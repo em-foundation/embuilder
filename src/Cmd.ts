@@ -197,6 +197,15 @@ export async function revealUnit() {
     }
 }
 
+export async function reset() {
+    let rsp = await Vsc.window.showErrorMessage('Have you committed and pushed all workspace changes?', { modal: true }, 'Proceed')
+    if (!rsp) return
+    rsp = await Vsc.window.showErrorMessage(`Execute '$HOME/EM/reset.sh' once we exit the EM•porium...`, { modal: true }, 'Proceed')
+    if (!rsp) return
+    Utils.writeScript('reset')
+    await Vsc.commands.executeCommand('workbench.action.quit')
+}
+
 export async function revealExplorer(uri: Vsc.Uri) {
     await Vsc.commands.executeCommand('revealInExplorer', uri)
 }
@@ -266,15 +275,6 @@ ${bodyText}
     await Vsc.commands.executeCommand('workbench.action.moveEditorToFirstGroup')
     for (let i = 0; i < 20; i++) await Vsc.commands.executeCommand('workbench.action.moveEditorLeftInGroup')
     await Vsc.commands.executeCommand('workbench.action.pinEditor')
-}
-
-export async function shutdown() {
-    const r = await Vsc.window.showWarningMessage(
-        `Shutdown EM•Builder`,
-        { modal: true },
-        'OK'
-    )
-    await Vsc.commands.executeCommand('github.codespaces.disconnectSuspend')
 }
 
 export async function startFirstTour() {

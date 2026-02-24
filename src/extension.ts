@@ -67,9 +67,9 @@ export async function activate(ctx: Vsc.ExtensionContext) {
         ctx.subscriptions.push(Vsc.commands.registerCommand('embuilder.downloadVcd', Cmd.downloadVcd))
         ctx.subscriptions.push(Vsc.commands.registerCommand('embuilder.gotoPulseView', Cmd.gotoPulseView))
         ctx.subscriptions.push(Vsc.commands.registerCommand('embuilder.refresh', Cmd.refresh))
+        ctx.subscriptions.push(Vsc.commands.registerCommand('embuilder.reset', Cmd.reset))
         ctx.subscriptions.push(Vsc.commands.registerCommand('embuilder.revealActiveUnit', Cmd.revealUnit))
         ctx.subscriptions.push(Vsc.commands.registerCommand('embuilder.showWelcome', Cmd.showWelcome))
-        ctx.subscriptions.push(Vsc.commands.registerCommand('embuilder.shutdown', Cmd.shutdown))
         ctx.subscriptions.push(Vsc.commands.registerCommand('embuilder.startFirstTour', Cmd.startFirstTour))
         ctx.subscriptions.push(
             Vsc.commands.registerCommand('embuilder.revealInExplorer', async (node: ContentView.Node) => {
@@ -155,7 +155,7 @@ export async function activate(ctx: Vsc.ExtensionContext) {
         Utils.refreshProps()
         await Cmd.initSetup()
 
-        Utils.writeLaunchScript()
+        Utils.writeScript('launch')
 
         Vsc.commands.executeCommand('workbench.action.terminal.focus')
 

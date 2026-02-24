@@ -259,11 +259,13 @@ export function workUri(): Vsc.Uri {
     return Vsc.Uri.joinPath(ROOT.uri, 'workspace')
 }
 
-export function writeLaunchScript() {
+export function writeScript(kind: 'launch' | 'reset') {
+    const txt = String(Fs.readFileSync(Path.join(rootPath(), `${kind}.sh`)))
     const emRoot = Path.join(Os.homedir(), 'EM')
-    const launchPath = Path.join(emRoot, 'launch.sh')
-    Fs.writeFileSync(launchPath, `#!/usr/bin/env bash
-code --skip-welcome --user-data-dir "$HOME/EM/data" --extensions-dir "$HOME/EM/exts" "$HOME/EM/repo/emporium"
-`)
-    Fs.chmodSync(launchPath, 0o755)
+    const scriptPath = Path.join(emRoot, `${kind}.sh`)
+    Fs.writeFileSync(scriptPath, txt)
+    Fs.chmodSync(scriptPath, 0o755)
+    if (kind === 'launch') {
+        Fs.rmSync(Path.join(emRoot, 'reset.sh'), { force: true })
+    }
 }
