@@ -311,6 +311,8 @@ export class ViewProvider implements Vsc.WebviewViewProvider {
             ViewProvider.cssText = await Utils.readText(cssUri)
         }
 
+        const codiconCss = cv.asWebviewUri(Vsc.Uri.joinPath(ctx.extensionUri, 'tour-resources', 'codicon.css'))
+        const materialCss = cv.asWebviewUri(Vsc.Uri.joinPath(ctx.extensionUri, 'tour-resources', 'material-symbols-outlined.css'))
         let body = Md.render(expandCmds(text, acts))
         const title = `${curTour!.bname}&ensp;&rarr;&ensp;Tour&thinsp;${curTour!.tnum}&thinsp;&middot;&thinsp;${curTour!.title}`
         let html = `
@@ -322,8 +324,8 @@ export class ViewProvider implements Vsc.WebviewViewProvider {
                             style-src ${cv.cspSource} https: 'unsafe-inline';
                             font-src https: data:;
                             script-src 'nonce-${nonce}';">
-            <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0" />
-            <link rel="stylesheet" href="https://unpkg.com/@vscode/codicons/dist/codicon.css" />
+            <link rel="stylesheet" href="${materialCss}" />
+            <link rel="stylesheet" href="${codiconCss}" />
             <style>
                 ${ViewProvider.cssText}
             </style>
