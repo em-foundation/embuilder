@@ -92,37 +92,17 @@ export async function clean() {
     await Vsc.commands.executeCommand('typescript.restartTsServer')
 }
 
-let downloadBusy = false
+let vcdBusy = false
 
 export async function downloadVcd() {
-
-    if (downloadBusy) return
-    downloadBusy = true
+    if (vcdBusy) return
+    vcdBusy = true
     try {
         const uri = StatusItems.vcdC.uri()
         await Utils.updateVcd(uri)
-
-        if (!Utils.isCodespace()) {
-            StatusItems.vcdC.start()
-            return
-        }
-
-        await Vsc.commands.executeCommand('workbench.view.explorer')
-        await Vsc.commands.executeCommand('revealInExplorer', uri)
-
-        const r = await Vsc.window.showInformationMessage(
-            `Right-click '${StatusItems.vcdC.file()}' > Download to a known location`,
-            { modal: true },
-            'OK'
-        )
-
-        if (r === 'OK') {
-            StatusItems.vcdC.start()
-        } else {
-            await Utils.focusBuilder()
-        }
+        StatusItems.vcdC.start()
     } finally {
-        downloadBusy = false
+        vcdBusy = false
     }
 }
 

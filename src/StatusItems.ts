@@ -99,11 +99,7 @@ export const vcdC = new class Download {
     private timeout: NodeJS.Timeout | undefined
     private readonly status = Vsc.window.createStatusBarItem(Vsc.StatusBarAlignment.Right)
     constructor() {
-        if (Utils.isCodespace()) {
-            this.status.text = `$(cloud-download)  Save '${Download.VCD_FILE}' $(arrow-right) Reload in PulseView  $(pulse)`
-        } else {
-            this.status.text = `Reload '${Download.VCD_FILE}' in PulseView  $(pulse)`
-        }
+        this.status.text = `Reload '${Download.VCD_FILE}' in PulseView  $(pulse)`
         this.status.color = VCD_COLOR
     }
     file() {
@@ -120,6 +116,7 @@ export const vcdC = new class Download {
     }
     async stop() {
         if (this.timeout) clearTimeout(this.timeout)
+        this.timeout = undefined
         this.status.hide()
         await Utils.focusBuilder()
     }

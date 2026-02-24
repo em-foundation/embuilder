@@ -8,6 +8,7 @@ import * as StatusItems from './StatusItems'
 import * as TourGuide from './TourGuide'
 import * as ToursView from './ToursView'
 import * as Utils from './Utils'
+import * as VcdWatcher from './VcdWatcher'
 
 const ASSOCS = {
     '*.em.ts': 'typescript',
@@ -101,12 +102,7 @@ export async function activate(ctx: Vsc.ExtensionContext) {
             emsWatcher.onDidDelete(() => ContentView.refresh()),
         )
 
-        const vcdWatcher = Vsc.workspace.createFileSystemWatcher(new Vsc.RelativePattern(Utils.rootUri(), '**/wokwi.vcd'))
-        ctx.subscriptions.push(
-            vcdWatcher,
-            vcdWatcher.onDidCreate(Cmd.downloadVcd),
-            vcdWatcher.onDidChange(Cmd.downloadVcd),
-        )
+        VcdWatcher.start(ctx)
 
         ctx.subscriptions.push(
             Vsc.languages.registerDocumentSemanticTokensProvider(
