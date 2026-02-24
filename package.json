@@ -20,7 +20,7 @@
         "typecheck": "tsc -p tsconfig.json --noEmit",
         "publish": "npm version patch --no-git-tag-version && npm run build && vsce publish --allow-star-activation",
         "vsce-pack": "npm run build && vsce pack --allow-star-activation",
-        "vsix": "npm run build && vsce pack --allow-star-activation"
+        "vsix": "rm -f *.vsix; TS=$(date -u +%Y%m%d%H%M); npm run build; vsce pack --allow-star-activation; FILE=$(ls *.vsix); mv \"$FILE\" \"${FILE%.vsix}.$TS.vsix\""
     },
     "devDependencies": {
         "@types/js-yaml": "^4.0.9",
