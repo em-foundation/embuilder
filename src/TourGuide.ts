@@ -14,9 +14,9 @@ interface Decor {
 
 interface File {
     readonly uri: Vsc.Uri
+    readonly decorMap: Map<string, Decor>
     doc?: Vsc.TextDocument
     ted?: Vsc.TextEditor
-    decorMap?: Map<string, Decor>
     openedTab?: Vsc.Tab
 }
 
@@ -61,16 +61,13 @@ const DecoratorFactory = new class DecoratorFactory {
         return dt
     }
     clear(file: File) {
-        file.decorMap!.forEach((v, k) => file!.ted!.setDecorations(v.type, []))
-        file.decorMap!.clear()
+        file.decorMap.forEach((v, k) => file.ted!.setDecorations(v.type, []))
+        file.decorMap.clear()
     }
     mark(file: File, label: string, line: number) {
         let decor: Decor = {
             type: this.create(label),
             range: mkRange(line),
-        }
-        if (!file.decorMap) {
-            file.decorMap = new Map<string, Decor>()
         }
         file.decorMap.set(label, decor)
     }
@@ -199,7 +196,7 @@ export async function start(uri: Vsc.Uri, devmode?: boolean) {
 
     for (let fn of curTour!.files ?? []) {
         const baseUri = fn.startsWith('.') ? Utils.toursUri() : Utils.workUri()
-        fileTab.push({ uri: Vsc.Uri.joinPath(baseUri, fn.replace(':', '/')) })
+        fileTab.push({ uri: Vsc.Uri.joinPath(baseUri, fn.replace(':', '/')), decorMap: new Map<string, Decor>() })
     }
 
     await closeAllExceptWelcome()
@@ -216,17 +213,15 @@ export async function start(uri: Vsc.Uri, devmode?: boolean) {
 }
 
 async function execCmds() {
+    for (const file of fileTab) {
+        DecoratorFactory.clear(file)
+    }
     const cmds = curTour!.steps[stepIdx].cmds ?? []
     try {
         for (let cmd of cmds) {
             let segs = cmd.trim().split(/\s+/)
             let file = segs.length > 1 && Number(segs[1]) ? fileTab[Number(segs[1]) - 1] : null
             switch (segs[0]) {
-                case 'clear': {
-                    file!.decorMap!.forEach((v, k) => file!.ted!.setDecorations(v.type, []))
-                    file!.decorMap!.clear()
-                    break
-                }
                 case 'close': {
                     if (file!.openedTab) {
                         await Vsc.window.tabGroups.close(file!.openedTab)
