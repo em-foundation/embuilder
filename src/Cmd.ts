@@ -110,6 +110,12 @@ export async function gotoPulseView() {
     await Vsc.env.openExternal(Vsc.Uri.parse('https://www.sigrok.org/wiki/Downloads'))
 }
 
+export async function localCopy(node: ContentView.Node) {
+    const uri = Utils.localCopy(node.uri.fsPath)
+    ContentView.refresh()
+    await ContentView.revealUri(uri)
+}
+
 export async function initSetup() {
     const brd = Utils.getBoard()
     await StatusItems.boardC.set(brd ? brd : 'rpi.2040://PI_PICO-sim$$')
@@ -166,15 +172,7 @@ export async function remove(node: ContentView.Node) {
 export async function revealUnit() {
     const uri = Vsc.window.activeTextEditor?.document.uri
     if (!uri || !uri.path.endsWith('.em.ts')) return
-    const segs = uri.path.split('/')
-    ContentView.refresh()
-    let u = Utils.workUri()
-    for (const seg of segs.slice(segs.length - 3)) {
-        u = Vsc.Uri.joinPath(u, seg)
-        const n = ContentView.getNode(u)!
-        ContentView.refresh(n)
-        await ContentView.reveal(n)
-    }
+    await ContentView.revealUri(uri)
 }
 
 export async function reset() {

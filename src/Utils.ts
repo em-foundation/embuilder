@@ -79,6 +79,17 @@ export function isCodespace(): boolean {
     return !!(e.CODESPACES || e.CODESPACE_NAME || e.GITHUB_CODESPACES_PORT_FORWARDING_DOMAIN)
 }
 
+export function localCopy(upath: string): Vsc.Uri {
+    const uname = Path.basename(upath)
+    const bname = Path.basename(Path.dirname(upath))
+    const bpath = Path.join(workPath(), 'zlocal', bname)
+    Fs.mkdirSync(bpath, { recursive: true })
+    const txt = String(Fs.readFileSync(upath))
+    Fs.writeFileSync(Path.join(bpath, uname), txt)
+    Vsc.commands.executeCommand('vscode.open', Vsc.Uri.file(upath), { preview: true })
+    return Vsc.Uri.joinPath(workUri(), 'zlocal', bname, uname)
+}
+
 export function mkNonce(): string {
     const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789'
     let s = ''

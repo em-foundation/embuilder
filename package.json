@@ -99,6 +99,10 @@
                 "icon": "icons/load.svg"
             },
             {
+                "command": "embuilder.localCopy",
+                "title": "Local Copy"
+            },
+            {
                 "command": "embuilder.downloadVcd",
                 "title": "EM•Builder: Download wokwi.vcd"
             },
@@ -341,13 +345,18 @@
             ],
             "view/item/context": [
                 {
+                    "command": "embuilder.localCopy",
+                    "group": "YYYnavigation@10",
+                    "when": "view == embuilder.content && viewItem == embuilder.unit"
+                },
+                {
                     "command": "embuilder.revealInExplorer",
-                    "group": "ZZZnavigation@10",
+                    "group": "ZZZnavigation@11",
                     "when": "view == embuilder.content"
                 },
                 {
                     "command": "embuilder.remove",
-                    "group": "ZZZnavigation@10",
+                    "group": "ZZZnavigation@12",
                     "when": "view == embuilder.content && (viewItem == embuilder.unit || viewItem == embuilder.bucket || viewItem == embuilder.package)"
                 },
                 {

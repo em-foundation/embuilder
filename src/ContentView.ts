@@ -30,6 +30,19 @@ export async function reveal(node?: Node) {
     await curTree.reveal(n, { select: true, focus: true, expand: true })
 }
 
+export async function revealUri(uri: Vsc.Uri, tailSegs = 3) {
+    if (!curRoot) return
+    const segs = uri.path.split('/').filter(Boolean).slice(-tailSegs)
+    let parent: Node = curRoot
+    for (const seg of segs) {
+        const kids = await curView.getChildren(parent)
+        const next = kids.find(k => k.label?.toString() === seg)
+        if (!next) return
+        await curTree.reveal(next, { select: true, focus: true, expand: true })
+        parent = next
+    }
+}
+
 export class Node extends Vsc.TreeItem {
     constructor(
         public readonly parent: Node | null,

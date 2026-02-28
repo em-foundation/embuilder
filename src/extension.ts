@@ -73,6 +73,11 @@ export async function activate(ctx: Vsc.ExtensionContext) {
         ctx.subscriptions.push(Vsc.commands.registerCommand('embuilder.showWelcome', Cmd.showWelcome))
         ctx.subscriptions.push(Vsc.commands.registerCommand('embuilder.startFirstTour', Cmd.startFirstTour))
         ctx.subscriptions.push(
+            Vsc.commands.registerCommand('embuilder.localCopy', async (node: ContentView.Node) => {
+                await Cmd.localCopy(node)
+            })
+        )
+        ctx.subscriptions.push(
             Vsc.commands.registerCommand('embuilder.revealInExplorer', async (node: ContentView.Node) => {
                 await Cmd.revealExplorer(node.uri)
             })
