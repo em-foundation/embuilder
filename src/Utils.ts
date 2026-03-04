@@ -4,7 +4,7 @@ import Os from 'os'
 import Path from 'path'
 import Vsc from 'vscode'
 
-export const EXT_ID = 'the-em-foundation.embrowser'
+export const EXT_ID = 'the-em-foundation.em-builder'
 
 export const PROP_BOARD = 'em.lang.BoardKind'
 export const PROP_DISTRO = 'em.lang.Distro'
