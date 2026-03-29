@@ -24,7 +24,7 @@
     "typescript.disableAutomaticTypeAcquisition": true,
     "typescript.tsserver.web.typeAcquisition.enabled": false,
     "window.zoomLevel": -1,
-    "workbench.colorTheme": "Default Dark Modern",
+    "workbench.colorTheme": "Dark Modern",
     "workbench.iconTheme": "vscode-icons",
     "workbench.tree.indent": 20,
     "[typescript]": {

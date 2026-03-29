@@ -15,6 +15,8 @@ body {
     font-family: 'Calibri';
     font-size: 1.05em;
     padding: 0;
+    hyphens: auto;
+    overflow-wrap: break-word;
 }
 
 div.em-frame {
@@ -159,7 +161,7 @@ code {
 }
 
 code.cmd-cd {
-    color: red;
+    color: hsl(0, 100%, 65%);
 }
 
 code.cmd-ce {
