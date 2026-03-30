@@ -144,6 +144,8 @@ export async function refresh() {
     ContentView.refresh()
     await Vsc.commands.executeCommand('typescript.restartTsServer')
     Utils.refreshProps()
+    Utils.spawnSync(['emscript', 'config'])
+
     Vsc.window.showInformationMessage(`EM•Builder refreshed`)
 }
 

@@ -111,6 +111,9 @@ export async function newContainer(uri: Vsc.Uri, cks: string): Promise<Vsc.Uri |
         return null
     }
     Fs.mkdirSync(cpath)
+    if (cks === 'Package') {
+        Fs.writeFileSync(Path.join(cpath, 'em-package.ini'), '')
+    }
     return Vsc.Uri.joinPath(uri, cname)
 }
 
