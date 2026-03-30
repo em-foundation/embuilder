@@ -165,12 +165,8 @@ export async function activate(ctx: Vsc.ExtensionContext) {
 
         // avoid dropdown
         setTimeout(async () => {
-            await Vsc.workspace.getConfiguration().update(
-                'workbench.colorTheme',
-                'EM•Script Dark',
-                Vsc.ConfigurationTarget.Workspace
-            )
-        }, 0)
+            await Utils.setColorTheme()
+        }, 100)
 
     } catch (e) {
         console.log('*** activate: fail')

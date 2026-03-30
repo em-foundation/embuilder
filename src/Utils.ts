@@ -176,6 +176,30 @@ export function rootUri(): Vsc.Uri {
     return ROOT.uri
 }
 
+export async function setColorTheme() {
+    const cfg = Vsc.workspace.getConfiguration()
+    await cfg.update(
+        'workbench.colorTheme',
+        'EM•Script Dark',
+        Vsc.ConfigurationTarget.Workspace
+    )
+    const actual = cfg.get<string>('workbench.colorTheme')
+    if (actual !== 'EM•Script Dark') {
+        const pick = await Vsc.window.showInformationMessage(
+            'EM•Builder requires the EM•Script Dark theme.',
+            { modal: true },
+            'Apply Theme'
+        )
+        if (pick === 'Apply Theme') {
+            await cfg.update(
+                'workbench.colorTheme',
+                'EM•Script Dark',
+                Vsc.ConfigurationTarget.Workspace
+            )
+        }
+    }
+}
+
 export function spawnLog(cli: string[]) {
     const cwd = workPath()
 
