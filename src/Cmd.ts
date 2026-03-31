@@ -140,13 +140,12 @@ export async function newUnit(node: ContentView.Node, uks: string) {
     await ContentView.reveal(newnode)
 }
 
-export async function refresh() {
+export async function refresh(silent: boolean = false) {
     ContentView.refresh()
     await Vsc.commands.executeCommand('typescript.restartTsServer')
     Utils.refreshProps()
     Utils.spawnSync(['emscript', 'config'])
-
-    Vsc.window.showInformationMessage(`EM•Builder refreshed`)
+    if (!silent) Vsc.window.showInformationMessage(`EM•Builder refreshed`)
 }
 
 export async function remove(node: ContentView.Node) {

@@ -153,12 +153,13 @@ export async function activate(ctx: Vsc.ExtensionContext) {
         ctx.subscriptions.push(Vsc.commands.registerCommand("em.bindBoard", Cmd.bindBoard))
         ctx.subscriptions.push(Vsc.commands.registerCommand("em.bindSetup", Cmd.bindSetup))
 
-        Utils.refreshProps()
         await Cmd.initSetup()
 
         Utils.writeScript('launch')
 
         Vsc.commands.executeCommand('workbench.action.terminal.focus')
+
+        Cmd.refresh(true)
 
         Cmd.showWelcome()
         Vsc.window.showInformationMessage(`EM•Builder activated (v${Utils.getVersExt()})`)
