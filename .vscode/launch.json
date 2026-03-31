@@ -8,7 +8,7 @@
             "runtimeExecutable": "${execPath}",
             "args": [
                 "--extensionDevelopmentPath=${workspaceFolder}",
-                "${workspaceFolder}/../emporium-fork"
+                "${workspaceFolder}/../emporium"
             ],
             "outFiles": [
                 "${workspaceFolder}/out/**/*.js"
@@ -24,7 +24,7 @@
                 "--disable-extensions",
                 "--user-data-dir=${workspaceFolder}/.clean-userdata",
                 "--extensions-dir=${workspaceFolder}/.clean-extensions",
-                "${workspaceFolder}/../emporium-fork"
+                "${workspaceFolder}/../emporium"
             ],
             "outFiles": [
                 "${workspaceFolder}/out/**/*.js"
