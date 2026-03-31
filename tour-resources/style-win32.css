@@ -12,7 +12,7 @@ html {
 }
 
 body {
-    font-family: 'Calibri';
+    font-family: 'EMSans';
     font-size: 1.05em;
     padding: 0;
     hyphens: auto;
@@ -21,7 +21,7 @@ body {
 
 div.em-frame {
     height: 400px !important;
-    width: 380px !important;
+    width: 400px !important;
     background-color: var(--main-color-background);
     border-width: 1px;
     border-style: solid;
@@ -155,9 +155,9 @@ a.cmd-bu:hover::after {
 
 code {
     background-color: transparent;
-    font-family: 'Consolas';
+    font-family: 'EMMono';
     font-size: 80%;
-    font-weight: bold;
+    font-weight: 500;
 }
 
 code.cmd-cd {

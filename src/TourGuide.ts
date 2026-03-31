@@ -94,6 +94,9 @@ export async function end() {
         if (!file.doc) continue
         let ted = await Vsc.window.showTextDocument(file.doc, OPEN_OPTS)
         if (file.decorMap) file.decorMap.forEach((v, k) => ted.setDecorations(v.type, []))
+        await Vsc.commands.executeCommand(
+            'workbench.action.files.resetActiveEditorReadonlyInSession'
+        )
         if (!ted0) ted0 = ted
     }
     curTour = null
@@ -308,42 +311,96 @@ export class ViewProvider implements Vsc.WebviewViewProvider {
 
         const codiconCss = cv.asWebviewUri(Vsc.Uri.joinPath(ctx.extensionUri, 'tour-resources', 'codicon.css'))
         const materialCss = cv.asWebviewUri(Vsc.Uri.joinPath(ctx.extensionUri, 'tour-resources', 'material-symbols-outlined.css'))
+
+        const sansReg = cv.asWebviewUri(Vsc.Uri.joinPath(ctx.extensionUri, 'tour-resources', 'carlito-v4-latin-regular.woff2'))
+        const sansBold = cv.asWebviewUri(Vsc.Uri.joinPath(ctx.extensionUri, 'tour-resources', 'carlito-v4-latin-700.woff2'))
+        const sansItalic = cv.asWebviewUri(Vsc.Uri.joinPath(ctx.extensionUri, 'tour-resources', 'carlito-v4-latin-italic.woff2'))
+
+        const monoReg = cv.asWebviewUri(Vsc.Uri.joinPath(ctx.extensionUri, 'tour-resources', 'JetBrainsMono-Regular.woff2'))
+        const monoBold = cv.asWebviewUri(Vsc.Uri.joinPath(ctx.extensionUri, 'tour-resources', 'JetBrainsMono-Bold.woff2'))
+        const monoItalic = cv.asWebviewUri(Vsc.Uri.joinPath(ctx.extensionUri, 'tour-resources', 'JetBrainsMono-Italic.woff2'))
+
+        const fontCss = `
+        @font-face {
+            font-family: 'EMSans';
+            src: url('${sansReg}') format('woff2');
+            font-weight: 400;
+            font-style: normal;
+        }
+
+        @font-face {
+            font-family: 'EMSans';
+            src: url('${sansBold}') format('woff2');
+            font-weight: 600;
+            font-style: normal;
+        }
+
+        @font-face {
+            font-family: 'EMSans';
+            src: url('${sansItalic}') format('woff2');
+            font-weight: 400;
+            font-style: italic;
+        }
+
+        @font-face {
+            font-family: 'EMMono';
+            src: url('${monoReg}') format('woff2');
+            font-weight: 400;
+            font-style: normal;
+        }
+
+        @font-face {
+            font-family: 'EMMono';
+            src: url('${monoBold}') format('woff2');
+            font-weight: 700;
+            font-style: normal;
+        }
+
+        @font-face {
+            font-family: 'EMMono';
+            src: url('${monoItalic}') format('woff2');
+            font-weight: 400;
+            font-style: italic;
+        }
+    `
+
         let body = Md.render(expandCmds(text, acts))
         const title = `${curTour!.bname}&ensp;&rarr;&ensp;Tour&thinsp;${curTour!.tnum}&thinsp;&middot;&thinsp;${curTour!.title}`
         let html = `
-            <html lang="en" style="width:400px;">
-            <head>
-            <meta http-equiv="Content-Security-Policy"
-                content="default-src 'none';
-                            img-src ${cv.cspSource} https: data:;
-                            style-src ${cv.cspSource} https: 'unsafe-inline';
-                            font-src https: data:;
-                            script-src 'nonce-${nonce}';">
-            <link rel="stylesheet" href="${materialCss}" />
-            <link rel="stylesheet" href="${codiconCss}" />
-            <style>
-                ${ViewProvider.cssText}
-            </style>
-            </head>
-            <body>
-                <div class="em-frame">
-                    ${body}
-                    <div class="em-title">${title}</div>
-                    <div class="em-seqn">${stepIdx + 1} of ${stepEnd + 1}</div>
-                </div>
+        <html lang="en" style="width:400px;">
+        <head>
+        <meta http-equiv="Content-Security-Policy"
+            content="default-src 'none';
+                        img-src ${cv.cspSource} https: data:;
+                        style-src ${cv.cspSource} https: 'unsafe-inline';
+                        font-src ${cv.cspSource} data:;
+                        script-src 'nonce-${nonce}';">
+        <link rel="stylesheet" href="${materialCss}" />
+        <link rel="stylesheet" href="${codiconCss}" />
+        <style>
+            ${fontCss}
+            ${ViewProvider.cssText}
+        </style>
+        </head>
+        <body>
+            <div class="em-frame">
+                ${body}
+                <div class="em-title">${title}</div>
+                <div class="em-seqn">${stepIdx + 1} of ${stepEnd + 1}</div>
+            </div>
 
-                <script nonce="${nonce}">
-                    const vscode = acquireVsCodeApi()
-                    document.addEventListener('click', (e) => {
-                        const a = e.target.closest('a.cmd-bu')
-                        if (!a) return
-                        e.preventDefault()
-                        vscode.postMessage({ kind: 'cmd', id: a.dataset.cmd })
-                    })
-                </script>
-            </body>
-            </html>
-`
+            <script nonce="${nonce}">
+                const vscode = acquireVsCodeApi()
+                document.addEventListener('click', (e) => {
+                    const a = e.target.closest('a.cmd-bu')
+                    if (!a) return
+                    e.preventDefault()
+                    vscode.postMessage({ kind: 'cmd', id: a.dataset.cmd })
+                })
+            </script>
+        </body>
+        </html>
+    `
         cv.html = html
     }
 
