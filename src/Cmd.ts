@@ -117,6 +117,7 @@ export async function localCopy(node: ContentView.Node) {
 }
 
 export async function initSetup() {
+    Utils.refreshProps()
     const brd = Utils.getBoard()
     await StatusItems.boardC.set(brd ? brd : 'rpi.2040://PI_PICO-sim$$')
 }
