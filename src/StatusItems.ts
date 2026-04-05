@@ -79,8 +79,11 @@ export const boardC = new class Board extends StatusItem {
             await setupC.set('')
             return
         }
-        const pn = mkDistroPkg(name)
+        const [pn, bn] = mkNames(name)
         await setupC.set(`${pn}://default`)
+        const bp = Path.join(Utils.workPath(), pn, `Board-${bn}.png`)
+        if (!Fs.existsSync(bp)) return
+        await Vsc.commands.executeCommand('vscode.open', Vsc.Uri.file(bp), { viewColumn: 1, preview: false })
     }
 }
 
@@ -148,7 +151,7 @@ function mkBoardNames(): string[] {
             const yobj = Yaml.load(String(Fs.readFileSync(bpath))) as Object
             for (const k of Object.keys(yobj)) {
                 if (k.startsWith('$')) continue
-                res.push(`${mkDistroPkg(bn)}://${k}`)
+                res.push(`${mkNames(bn)[0]}://${k}`)
             }
         }
     }
@@ -158,15 +161,16 @@ function mkBoardNames(): string[] {
     return res
 }
 
-function mkDistroPkg(brd: string): string {
-    return brd.split('://')[0].replace('.distro', '')
+function mkNames(brd: string): [string, string] {
+    const segs = brd.split('://')
+    return [segs[0].replace('.distro', ''), segs[1]]
 }
 
 function mkSetupNames(): string[] {
     let res = new Array<string>()
     const brd = boardC.get()
     if (!brd) return []
-    const distro = (brd == '<bare-metal>') ? '' : mkDistroPkg(brd)
+    const distro = (brd == '<bare-metal>') ? '' : mkNames(brd)[0]
     const wpath = Utils.workPath()
     for (const pn of Fs.readdirSync(wpath)) {
         const ppath = Path.join(wpath, pn)
