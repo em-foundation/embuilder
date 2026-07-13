@@ -3,7 +3,7 @@
     --main-color-darker: hsl(165, 50%, 45%);
     --main-color-border: hsl(165, 40%, 45%);
     --main-color-background: hsl(165, 8%, 20%);
-    --accent-color:  hsl(195, 100%, 70%);
+    --accent-color: hsl(195, 100%, 70%);
     --button-color: hsl(35, 100%, 50%);
 }
 
@@ -85,8 +85,8 @@ p {
 }
 
 span.cb {
-    color: var(--button-color); 
-    font-size: 0.85em !important;   
+    color: var(--button-color);
+    font-size: 0.85em !important;
 }
 
 span.material-symbols-outlined {
@@ -102,10 +102,30 @@ span.cmd-bi span.material-symbols-outlined {
     padding-right: 3px;
 }
 
+span.cmd-bm {
+    display: inline-flex;
+    align-items: center;
+    vertical-align: -0.18em;
+}
+
+span.cmd-bm svg {
+    display: block;
+}
+
+span.cmd-dc {
+    display: inline-flex;
+    align-items: center;
+    vertical-align: -0.22em;
+}
+
+span.cmd-dc svg {
+    display: block;
+}
+
 span.em-actions {
     position: absolute;
     right: 0;
-    bottom: 0;   /* aligns to baseline area */
+    bottom: 0; /* aligns to baseline area */
 }
 
 span.em {
@@ -120,8 +140,8 @@ a {
     white-space: nowrap;
 }
 
-a[href^="http"]::after {
-    content: "\29C9\2009";
+a[href^='http']::after {
+    content: '\29C9\2009';
     font-size: 0.7em;
     margin-left: 2px;
 }
@@ -149,7 +169,7 @@ a.cmd-bu:hover::after {
     padding: 4px 6px;
     font-size: 13px;
     white-space: nowrap;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.35);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.35);
     opacity: 1;
 }
 
@@ -181,7 +201,7 @@ code.cmd-cn {
 }
 
 code.cmd-cr {
-    color: #569CD6
+    color: #569cd6;
 }
 
 code.cmd-cs {
@@ -189,17 +209,17 @@ code.cmd-cs {
 }
 
 code.cmd-ct {
-    color: #4ec9B0;
+    color: #4ec9b0;
 }
 
 code.cmd-cu {
     /* color: #53acf5; */
-    color: #4ec9B0;
+    color: #4ec9b0;
     font-weight: bold;
 }
 
 code.cmd-cx {
-    color: rgb(212,212,212);
+    color: rgb(212, 212, 212);
 }
 
 div.em-dl dt {

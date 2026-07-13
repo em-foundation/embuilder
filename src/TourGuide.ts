@@ -46,6 +46,7 @@ const DEC_REND_OPTS: Vsc.DecorationRenderOptions = {
 const OPEN_OPTS: Vsc.TextDocumentShowOptions = { viewColumn: 1, preview: false }
 
 const BM_SVG = '<svg xmlns="http://www.w3.org/2000/svg" height="18px" viewBox="0 0 20 20" width="18px" fill="hsl(48,89%,50%)"><path d="M0 0h24v24H0V0z" fill="none"/><path d="M17 3H7c-1.1 0-2 .9-2 2v16l7-3 7 3V5c0-1.1-.9-2-2-2z"/> <text text-anchor="middle" alignment-baseline="middle" x="11.5" y="12.0" fill="black" font-weight="bold" font-size="16" font-family="Consolas, monospace">$label</text> </svg>'
+const DC_SVG = '<svg xmlns="http://www.w3.org/2000/svg" height="18px" width="18px" viewBox="0 0 20 20"><circle cx="10" cy="10" r="9" fill="hsl(312, 75%, 75%)"/><text text-anchor="middle" alignment-baseline="middle" x="10" y="10.8" fill="black" font-weight="bold" font-size="12" font-family="Consolas, monospace">$label</text></svg>'
 
 const DecoratorFactory = new class DecoratorFactory {
     private readonly map = new Map<string, Vsc.TextEditorDecorationType>()
@@ -446,7 +447,7 @@ function expandCmds(body: string, acts: ActionId[]): string {
             case 'bi':
                 return `<span class="cmd-bi"><span class="material-symbols-outlined">${args[1]}</span></span>`
             case 'bm':
-                return `${BM_SVG.replace('$label', args[1])}&nbsp;`
+                return `<span class="cmd-bm">${BM_SVG.replace('$label', args[1])}&nbsp;</span>`
             case 'bu':
                 return `<a class="cmd-bu" href="#" data-cmd="${args[2]}" title="${txt}"><span class="codicon codicon-${args[1]}"></span><span class="cmd-bu-label">${txt}</span></a>`
             case 'cb':
@@ -463,6 +464,8 @@ function expandCmds(body: string, acts: ActionId[]): string {
             case 'cu':
             case 'cx':
                 return `<code class="cmd-${args[0]}">${txt}</code>`
+            case 'dc':
+                return `<span class="cmd-dc">${DC_SVG.replace('$label', args[1])}&nbsp;</span>`
             case 'em':
                 return `<span class="em">${txt}</span>`
             case 'hc':
