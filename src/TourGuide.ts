@@ -141,6 +141,10 @@ export async function restart() {
     await start(uri, dev)
 }
 
+export async function screenshot() {
+    await Utils.screenshot('tourstop')
+}
+
 async function sync() {
     let step = curTour!.steps[stepIdx]
     if (curTour!.$dev) {

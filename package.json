@@ -205,6 +205,11 @@
                 "command": "em.tour.restart",
                 "title": "Restart",
                 "icon": "icons/home.svg"
+            },
+            {
+                "command": "em.tour.screenshot",
+                "title": "Screenshot",
+                "icon": "icons/camera.svg"
             }
         ],
         "configuration": {
@@ -345,6 +350,10 @@
                 {
                     "command": "em.tour.restart",
                     "when": "false"
+                },
+                {
+                    "command": "em.tour.screenshot",
+                    "when": "false"
                 }
             ],
             "view/item/context": [
@@ -468,9 +477,14 @@
                     "group": "navigation@4"
                 },
                 {
-                    "command": "em.tour.end",
+                    "command": "em.tour.screenshot",
                     "when": "view == em.tourGuide",
                     "group": "navigation@5"
+                },
+                {
+                    "command": "em.tour.end",
+                    "when": "view == em.tourGuide",
+                    "group": "navigation@6"
                 }
             ]
         },
