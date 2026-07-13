@@ -70,6 +70,7 @@ export async function activate(ctx: Vsc.ExtensionContext) {
         ctx.subscriptions.push(Vsc.commands.registerCommand('embuilder.refresh', Cmd.refresh))
         ctx.subscriptions.push(Vsc.commands.registerCommand('embuilder.reset', Cmd.reset))
         ctx.subscriptions.push(Vsc.commands.registerCommand('embuilder.revealActiveUnit', Cmd.revealUnit))
+        ctx.subscriptions.push(Vsc.commands.registerCommand('embuilder.screenshot', Cmd.screenshot))
         ctx.subscriptions.push(Vsc.commands.registerCommand('embuilder.showWelcome', Cmd.showWelcome))
         ctx.subscriptions.push(Vsc.commands.registerCommand('embuilder.startFirstTour', Cmd.startFirstTour))
         ctx.subscriptions.push(

@@ -2,6 +2,7 @@ import Cp from 'child_process'
 import Fs from 'fs'
 import Os from 'os'
 import Path from 'path'
+import Screen from 'node-screenshots'
 import Vsc from 'vscode'
 
 export const EXT_ID = 'the-em-foundation.em-builder'
@@ -34,6 +35,10 @@ const loggerC = new class Logger {
         })
         this.output.show(true)
     }
+}
+
+export async function delay(ms: number): Promise<void> {
+    await new Promise<void>(resolve => setTimeout(resolve, ms))
 }
 
 export async function focusBuilder() {
@@ -179,6 +184,24 @@ export function rootUri(): Vsc.Uri {
     return ROOT.uri
 }
 
+export async function screenshot(prefix: string): Promise<string> {
+    const win = Screen.Window.all().find(w =>
+        w.isFocused() &&
+        !w.isMinimized() &&
+        /visual studio code|code/i.test(`${w.appName()} ${w.title()}`)
+    )
+    if (win === undefined) throw new Error('embuilder.screenshot: VS Code window not found')
+    await delay(5000)
+    const dir = Path.join(rootPath(), '.screenshots')
+    Fs.mkdirSync(dir, { recursive: true })
+    const file = Path.join(dir, `${prefix}-${timestamp()}.png`)
+    const image = await win.captureImage()
+    const png = await image.toPng(true)
+    Fs.writeFileSync(file, png)
+    Vsc.window.showInformationMessage(`Saved '.screenshots/${Path.basename(file)}'`)
+    return file
+}
+
 export async function setColorTheme() {
     const cfg = Vsc.workspace.getConfiguration()
     await cfg.update(
@@ -242,6 +265,10 @@ export function spawnSync(cli: string[]): string {
     if (err) console.log(`*** spawnSync: ${err}`)
     return proc.stdout ?? ''
 
+}
+
+export function timestamp(): string {
+    return new Date().toISOString().slice(2, 19).replace(/\D/g, '')
 }
 
 export function toolsPath(): string {

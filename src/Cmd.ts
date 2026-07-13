@@ -190,6 +190,10 @@ export async function revealExplorer(uri: Vsc.Uri) {
     await Vsc.commands.executeCommand('revealInExplorer', uri)
 }
 
+export async function screenshot() {
+    await Utils.screenshot('command')
+}
+
 let welcomePanel: Vsc.WebviewPanel | undefined
 
 export async function showWelcome() {

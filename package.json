@@ -16,7 +16,7 @@
     },
     "main": "./out/extension.js",
     "scripts": {
-        "build": "npm run typecheck && esbuild src/extension.ts --bundle --format=cjs --platform=node --external:vscode --outfile=out/extension.js",
+        "build": "npm run typecheck && node esbuild.mjs",
         "typecheck": "tsc -p tsconfig.json --noEmit",
         "publish": "npm version patch --no-git-tag-version && npm run build && vsce publish --allow-star-activation",
         "vsce-pack": "npm run build && vsce pack --allow-star-activation",
@@ -109,6 +109,10 @@
             {
                 "command": "embuilder.gotoPulseView",
                 "title": "EM•Builder: PulseView Download Site"
+            },
+            {
+                "command": "embuilder.screenshot",
+                "title": "EM•Builder: ScreenShot"
             },
             {
                 "command": "embuilder.showWelcome",
@@ -529,6 +533,7 @@
     },
     "dependencies": {
         "js-yaml": "^4.1.1",
-        "markdown-it": "^14.1.0"
+        "markdown-it": "^14.1.0",
+        "node-screenshots": "^0.2.8"
     }
 }
