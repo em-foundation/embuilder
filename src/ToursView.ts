@@ -57,9 +57,13 @@ export class Provider implements Vsc.TreeDataProvider<TourNode> {
             const state = bflg ? Vsc.TreeItemCollapsibleState.None : curFirstBundle ? Vsc.TreeItemCollapsibleState.Collapsed : Vsc.TreeItemCollapsibleState.Expanded
             const item = new Vsc.TreeItem(uri, state)
             curFirstBundle ??= item
-            item.resourceUri = Vsc.Uri.parse(`embuilder-tour:${uri.path}`)  // synthetic
+            const segs = uri.path.split('/')
+            const name = segs.at(-1)!
+            const parent = segs.at(-2)!
+            const num = bflg ? name.slice(0, 2) : parent.slice(0, 3)
+            item.resourceUri = Vsc.Uri.parse(`embuilder-tour:${uri.path}`)
             item.contextValue = !bflg ? 'em.tour.bundle' : 'em.tour'
-            item.label = meta.title
+            item.label = `${num} · ${meta.title}`
             item.tooltip = meta.description ?? new Vsc.MarkdownString(' ')
             item.iconPath = this.icon(!bflg ? 'icons/tour-bundle.svg' : 'icons/compass.png')
             if (bflg) {
