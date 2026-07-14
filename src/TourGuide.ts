@@ -39,6 +39,7 @@ interface TourLocation {
     readonly uri: Vsc.Uri
     readonly stepIdx: number
     readonly devmode?: boolean
+    readonly title: string
 }
 
 interface Tour {
@@ -229,9 +230,13 @@ export async function start(uri: Vsc.Uri, devmode?: boolean) {
     await gotoTour(uri, 0, devmode)
 }
 
+function curTourTitle(): string {
+    return `${curTour!.bname} → Tour ${curTour!.tnum} · ${curTour!.title}`
+}
+
 async function gotoTour(uri: Vsc.Uri, targetStep = 0, devmode?: boolean, pushCurrent = false) {
     if (pushCurrent && curTour?.uri) {
-        tourStack.push({ uri: curTour.uri, stepIdx, devmode: curTour.$dev })
+        tourStack.push({ uri: curTour.uri, stepIdx, devmode: curTour.$dev, title: curTourTitle() })
     }
     if (curTour) await leaveTour(false)
     uri = Vsc.Uri.parse(`file://${uri.path}`)
@@ -493,9 +498,7 @@ export class ViewProvider implements Vsc.WebviewViewProvider {
 
         let body = Md.render(expandCmds(text, acts))
         const returnLoc = tourStack.at(-1)
-        const returnTip = returnLoc
-            ? `Return to ${returnLoc.uri.path.split('/').at(-2)?.slice(0, 3)}/${returnLoc.uri.path.split('/').pop()?.slice(0, 2)}/${String(returnLoc.stepIdx + 1).padStart(2, '0')}`
-            : ''
+        const returnTip = returnLoc?.title ?? ''
         const returnMark = returnLoc
             ? `<span class="em-return" title="${returnTip}">
                 <svg viewBox="0 0 16 16" aria-hidden="true">
