@@ -225,6 +225,10 @@ export async function start(uri: Vsc.Uri, devmode?: boolean) {
 
 async function execCmds() {
     for (const file of fileTab) {
+        if (file.openedTab) {
+            await Vsc.window.tabGroups.close(file.openedTab)
+            file.openedTab = undefined
+        }
         DecoratorFactory.clear(file)
     }
     const cmds = curTour!.steps[stepIdx].cmds ?? []
@@ -234,10 +238,10 @@ async function execCmds() {
             let file = segs.length > 1 && Number(segs[1]) ? fileTab[Number(segs[1]) - 1] : null
             switch (segs[0]) {
                 case 'close': {
-                    if (file!.openedTab) {
-                        await Vsc.window.tabGroups.close(file!.openedTab)
-                        file!.openedTab = undefined
-                    }
+                    // if (file!.openedTab) {
+                    //     await Vsc.window.tabGroups.close(file!.openedTab)
+                    //     file!.openedTab = undefined
+                    // }
                     break
                 }
                 case 'mark': {

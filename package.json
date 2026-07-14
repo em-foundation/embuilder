@@ -234,6 +234,18 @@
                 "path": "./syntaxes/EmLog.tmLanguage.json"
             }
         ],
+        "keybindings": [
+            {
+                "command": "em.tour.prev",
+                "key": "left",
+                "when": "em-builder.activeTour"
+            },
+            {
+                "command": "em.tour.next",
+                "key": "right",
+                "when": "em-builder.activeTour"
+            }
+        ],
         "languages": [
             {
                 "id": "em",
@@ -459,22 +471,22 @@
                 {
                     "command": "em.tour.prev",
                     "when": "view == em.tourGuide",
-                    "group": "navigation@1"
+                    "group": "navigation@3"
                 },
                 {
                     "command": "em.tour.next",
                     "when": "view == em.tourGuide",
-                    "group": "navigation@2"
+                    "group": "navigation@4"
                 },
                 {
                     "command": "em.tour.refresh",
                     "when": "view == em.tourGuide",
-                    "group": "navigation@3"
+                    "group": "navigation@2"
                 },
                 {
                     "command": "em.tour.restart",
                     "when": "view == em.tourGuide",
-                    "group": "navigation@4"
+                    "group": "navigation@1"
                 },
                 {
                     "command": "em.tour.screenshot",
