@@ -28,6 +28,11 @@ interface Step {
     srcLine?: number
 }
 
+interface TourRef {
+    readonly addr: string
+    readonly title: string
+}
+
 interface Tour {
     readonly title: string
     readonly files: string[]
@@ -37,6 +42,7 @@ interface Tour {
     bname?: string
     gnum?: string
     tnum?: string
+    refs?: Map<string, TourRef>
     $dev?: boolean
 }
 
@@ -48,6 +54,17 @@ const OPEN_OPTS: Vsc.TextDocumentShowOptions = { viewColumn: 1, preview: false }
 
 const BM_SVG = '<svg xmlns="http://www.w3.org/2000/svg" height="18px" viewBox="0 0 20 20" width="18px" fill="hsl(48,89%,50%)"><path d="M0 0h24v24H0V0z" fill="none"/><path d="M17 3H7c-1.1 0-2 .9-2 2v16l7-3 7 3V5c0-1.1-.9-2-2-2z"/> <text text-anchor="middle" alignment-baseline="middle" x="11.5" y="12.0" fill="black" font-weight="bold" font-size="16" font-family="Consolas, monospace">$label</text> </svg>'
 const DC_SVG = '<svg xmlns="http://www.w3.org/2000/svg" height="18px" width="18px" viewBox="0 0 20 20"><circle cx="10" cy="10" r="9" fill="hsl(312, 75%, 75%)"/><text text-anchor="middle" alignment-baseline="middle" x="10" y="10.8" fill="black" font-weight="bold" font-size="12" font-family="Consolas, monospace">$label</text></svg>'
+
+const TR_FLAG_SVG = `
+<svg xmlns="http://www.w3.org/2000/svg"
+     width="15" height="16" viewBox="0 0 15 16">
+  <path d="M2 2v12"
+        stroke="hsl(28, 100%, 50%)"
+        stroke-width="1.5"
+        stroke-linecap="round"/>
+  <path d="M3 2h10l-2.5 3L13 8H3z"
+        fill="hsl(28, 100%, 50%)"/>
+</svg>`
 
 const DecoratorFactory = new class DecoratorFactory {
     private readonly map = new Map<string, Vsc.TextEditorDecorationType>()
@@ -209,6 +226,7 @@ export async function start(uri: Vsc.Uri, devmode?: boolean) {
     curTour!.bname = meta.title
     curTour!.gnum = gnum
     curTour!.tnum = tnum
+    curTour!.refs = await resolveTourRefs(curTour!.steps)
     curTour.$dev = devmode
 
     let idx = 0
@@ -288,6 +306,56 @@ async function execCmds() {
             }
         }
     } catch (err) { console.log(err) }
+}
+
+async function resolveTourRefs(steps: Step[]): Promise<Map<string, TourRef>> {
+    const refs = new Map<string, TourRef>()
+    const addrs = new Set<string>()
+    for (const step of steps) {
+        for (const match of step.text.matchAll(/[{%]\[tr,(\d{3}\/\d{2}(?:\/\d{2})?)\][}%]/g))
+            addrs.add(match[1])
+    }
+    const groups = await Vsc.workspace.fs.readDirectory(Utils.toursUri())
+    for (const addr of addrs) {
+        try {
+            const [gnum, tnum, snum] = addr.split('/')
+            const gname = groups.find(([name, kind]) =>
+                kind === Vsc.FileType.Directory && name.startsWith(`${gnum}_`)
+            )?.[0]
+            if (!gname) throw new Error(`group ${gnum} not found`)
+            const groupUri = Vsc.Uri.joinPath(Utils.toursUri(), gname)
+            const bundleUri = Vsc.Uri.joinPath(groupUri, 'emtour-bundle')
+            const bundle = Yaml.load(await Utils.readText(bundleUri)) as { title?: string }
+            const entries = await Vsc.workspace.fs.readDirectory(groupUri)
+            const tourName = entries.find(([name, kind]) =>
+                kind === Vsc.FileType.File &&
+                name.startsWith(`${tnum}_`) &&
+                name.endsWith('.emtour')
+            )?.[0]
+            if (!tourName) throw new Error(`tour ${gnum}/${tnum} not found`)
+            const tourUri = Vsc.Uri.joinPath(groupUri, tourName)
+            const tour = Yaml.load(await Utils.readText(tourUri)) as Tour
+            const title =
+                `${bundle.title ?? gname} → Tour ${tnum} · ${tour.title}` +
+                (snum ? ` · Stop ${snum}` : '')
+            refs.set(addr, { addr, title })
+        }
+        catch {
+            refs.set(addr, {
+                addr,
+                title: `Unresolved tour reference: ${addr}`
+            })
+        }
+    }
+    return refs
+}
+
+function escapeAttr(text: string): string {
+    return text
+        .replace(/&/g, '&amp;')
+        .replace(/"/g, '&quot;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
 }
 
 async function closeAllExceptWelcome() {
@@ -515,6 +583,13 @@ function expandCmds(body: string, acts: ActionId[]): string {
             }
             case 'le':
                 return `<a class="cmd-le" href="${args[1]}"><span class="cmd-le">${txt}</a>`
+
+            case 'tr': {
+                const addr = args[1]
+                const ref = curTour!.refs?.get(addr)
+                const title = escapeAttr(ref?.title ?? `Unresolved tour reference: ${addr}`)
+                return `<span class="cmd-tr" title="${title}"><span class="cmd-tr-flag">${TR_FLAG_SVG}</span><span class="cmd-tr-addr">${addr}</span></span>`
+            }
             case 'uc':
                 return '<div class="em-happy">🚧 Reopening Soon 🛠️</div>'
             default:

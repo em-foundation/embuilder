@@ -122,6 +122,41 @@ span.cmd-dc svg {
     display: block;
 }
 
+span.cmd-tr {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.12em;
+    vertical-align: -0.16em;
+    white-space: nowrap;
+    border: none !important;
+    outline: none !important;
+    box-shadow: none !important;
+    background: transparent !important;
+    padding: 0 0 0 0.05em;
+}
+
+span.cmd-tr svg {
+    display: block;
+}
+
+span.cmd-tr-addr {
+    color: hsl(28, 100%, 50%);
+    font-family: EMMono, monospace;
+    font-size: 0.55em;
+    font-weight: 700;
+}
+
+span.cmd-tr svg {
+    display: block;
+}
+
+span.cmd-tr-addr {
+    color: hsl(28, 95%, 65%);
+    font-family: EMMono, monospace;
+    font-size: 0.65em;
+    font-weight: 700;
+}
+
 span.em-actions {
     position: absolute;
     right: 0;
