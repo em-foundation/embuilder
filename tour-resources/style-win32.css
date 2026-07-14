@@ -168,6 +168,30 @@ span.em {
     font-weight: bold;
 }
 
+div.em-seqn {
+    bottom: 0;
+    right: 4px;
+    width: auto;
+    position: absolute;
+    padding-right: 32px;
+    text-align: right;
+}
+
+span.em-return {
+    position: absolute;
+    right: -4px;
+    bottom: 0;
+    width: 28px;
+    height: 28px;
+    cursor: pointer;
+}
+
+span.em-return svg {
+    width: 28px;
+    height: 28px;
+    display: block;
+}
+
 a {
     color: var(--main-color-darker);
     font-weight: bold;

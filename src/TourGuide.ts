@@ -497,7 +497,13 @@ export class ViewProvider implements Vsc.WebviewViewProvider {
             ? `Return to ${returnLoc.uri.path.split('/').at(-2)?.slice(0, 3)}/${returnLoc.uri.path.split('/').pop()?.slice(0, 2)}/${String(returnLoc.stepIdx + 1).padStart(2, '0')}`
             : ''
         const returnMark = returnLoc
-            ? `<span class="em-return" title="${returnTip}">↩</span>&ensp;`
+            ? `<span class="em-return" title="${returnTip}">
+                <svg viewBox="0 0 16 16" aria-hidden="true">
+                <path
+                    d="M2.5 2.5h5.5v3H6.5V4H4v8h2.5v-1.5H8v3H2.5zM8 5.5l4 2.5-4 2.5V9H6.5V7H8z"
+                    fill="hsl(28, 100%, 50%)"/>
+                </svg>
+            </span>`
             : ''
         const title = `${curTour!.bname}&ensp;&rarr;&ensp;Tour&thinsp;${curTour!.tnum}&thinsp;&middot;&thinsp;${curTour!.title}`
         let html = `
@@ -520,7 +526,7 @@ export class ViewProvider implements Vsc.WebviewViewProvider {
             <div class="em-frame">
                 ${body}
                 <div class="em-title">${title}</div>
-                <div class="em-seqn">${returnMark}${stepIdx + 1} of ${stepEnd + 1}</div>
+                <div class="em-seqn">${stepIdx + 1} of ${stepEnd + 1}${returnMark}</div>
             </div>
 
             <script nonce="${nonce}">
