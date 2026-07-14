@@ -35,6 +35,7 @@ interface Tour {
     readonly steps: Step[]
     uri?: Vsc.Uri
     bname?: string
+    gnum?: string
     tnum?: string
     $dev?: boolean
 }
@@ -142,7 +143,7 @@ export async function restart() {
 }
 
 export async function screenshot() {
-    await Utils.screenshot('tourstop')
+    await Utils.screenshot(`tourstop-${curTour!.gnum}-${curTour!.tnum}-${stepIdx + 1}`)
 }
 
 async function sync() {
@@ -180,9 +181,11 @@ export async function start(uri: Vsc.Uri, devmode?: boolean) {
     curTour = Yaml.load(src) as Tour
     const metaUri = Vsc.Uri.joinPath(uri, '..', 'emtour-bundle')
     const meta = Yaml.load(await Utils.readText(metaUri)) as any
+    const gnum = uri.path.split('/').at(-2)?.slice(0, 3)
     const tnum = uri.path.split('/').pop()?.slice(0, 2)
     curTour!.uri = uri
     curTour!.bname = meta.title
+    curTour!.gnum = gnum
     curTour!.tnum = tnum
     curTour.$dev = devmode
 
