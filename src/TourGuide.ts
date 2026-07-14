@@ -143,7 +143,29 @@ export async function restart() {
 }
 
 export async function screenshot() {
-    await Utils.screenshot(`tourstop-${curTour!.gnum}-${curTour!.tnum}-${stepIdx + 1}`)
+    const relPath = `.screenshots/tourstop-${curTour!.gnum}-${curTour!.tnum}-${stepIdx + 1}-${Utils.timestamp()}`
+    await Utils.screenshot(relPath, { delayMs: 5000, notify: true })
+}
+
+let slideshowBusy = false
+
+export async function slideshow() {
+    if (!curTour || slideshowBusy) return
+    slideshowBusy = true
+    await Utils.delay(2000)
+    try {
+        for (stepIdx = 0; stepIdx <= stepEnd; stepIdx++) {
+            await execCmds()
+            await sync()
+            const snum = String(stepIdx + 1).padStart(2, '0')
+            const relPath = `tours/.screens/${curTour.gnum}_${curTour.tnum}_${snum}`
+            await Utils.screenshot(relPath, { delayMs: 1000 })
+        }
+        Vsc.window.showInformationMessage(`Captured ${stepEnd + 1} tour stops`)
+    }
+    finally {
+        slideshowBusy = false
+    }
 }
 
 async function sync() {

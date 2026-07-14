@@ -39,6 +39,7 @@ export async function activate(ctx: Vsc.ExtensionContext) {
         ctx.subscriptions.push(Vsc.commands.registerCommand('em.tour.refresh', TourGuide.refresh))
         ctx.subscriptions.push(Vsc.commands.registerCommand('em.tour.restart', TourGuide.restart))
         ctx.subscriptions.push(Vsc.commands.registerCommand('em.tour.screenshot', TourGuide.screenshot))
+        ctx.subscriptions.push(Vsc.commands.registerCommand('em.tour.slideshow', TourGuide.slideshow))
 
         ContentView.init(ctx)
         await Utils.focusBuilder()

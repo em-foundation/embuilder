@@ -210,6 +210,10 @@
                 "command": "em.tour.screenshot",
                 "title": "Screenshot",
                 "icon": "icons/camera.svg"
+            },
+            {
+                "command": "em.tour.slideshow",
+                "title": "EM•Tours: Slideshow"
             }
         ],
         "configuration": {
@@ -366,6 +370,10 @@
                 {
                     "command": "em.tour.screenshot",
                     "when": "false"
+                },
+                {
+                    "command": "em.tour.slideshow",
+                    "when": "em-builder.activeTour"
                 }
             ],
             "view/item/context": [

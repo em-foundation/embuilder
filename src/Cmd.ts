@@ -191,7 +191,7 @@ export async function revealExplorer(uri: Vsc.Uri) {
 }
 
 export async function screenshot() {
-    await Utils.screenshot('command')
+    await Utils.screenshot(`.screenshots/command-${Utils.timestamp()}`, { delayMs: 5000, notify: true })
 }
 
 let welcomePanel: Vsc.WebviewPanel | undefined
