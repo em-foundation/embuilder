@@ -237,12 +237,12 @@
         "keybindings": [
             {
                 "command": "em.tour.prev",
-                "key": "left",
+                "key": "alt+left",
                 "when": "em-builder.activeTour"
             },
             {
                 "command": "em.tour.next",
-                "key": "right",
+                "key": "alt+right",
                 "when": "em-builder.activeTour"
             }
         ],

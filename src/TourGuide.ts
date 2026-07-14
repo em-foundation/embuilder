@@ -223,35 +223,38 @@ export async function start(uri: Vsc.Uri, devmode?: boolean) {
     next()
 }
 
+
 async function execCmds() {
-    for (const file of fileTab) {
-        if (file.openedTab) {
+    const cmds = curTour!.steps[stepIdx].cmds ?? []
+    const keep = new Set<number>()
+    for (const cmd of cmds) {
+        const segs = cmd.trim().split(/\s+/)
+        if ((segs[0] === 'open' || segs[0] === 'view') && Number(segs[1]))
+            keep.add(Number(segs[1]) - 1)
+    }
+    for (const [idx, file] of fileTab.entries()) {
+        DecoratorFactory.clear(file)
+
+        if (file.openedTab && !keep.has(idx)) {
             await Vsc.window.tabGroups.close(file.openedTab)
             file.openedTab = undefined
         }
-        DecoratorFactory.clear(file)
     }
-    const cmds = curTour!.steps[stepIdx].cmds ?? []
     try {
         for (let cmd of cmds) {
             let segs = cmd.trim().split(/\s+/)
             let file = segs.length > 1 && Number(segs[1]) ? fileTab[Number(segs[1]) - 1] : null
             switch (segs[0]) {
-                case 'close': {
-                    // if (file!.openedTab) {
-                    //     await Vsc.window.tabGroups.close(file!.openedTab)
-                    //     file!.openedTab = undefined
-                    // }
-                    break
-                }
                 case 'mark': {
                     DecoratorFactory.mark(file!, segs[2], Number(segs[3]))
                     break
                 }
                 case 'open': {
-                    file!.doc = await Vsc.workspace.openTextDocument(file!.uri)
-                    file!.ted = await Vsc.window.showTextDocument(file!.doc, OPEN_OPTS)
-                    file!.openedTab = Vsc.window.tabGroups.activeTabGroup.activeTab
+                    if (!file!.openedTab) {
+                        file!.doc = await Vsc.workspace.openTextDocument(file!.uri)
+                        file!.ted = await Vsc.window.showTextDocument(file!.doc, OPEN_OPTS)
+                        file!.openedTab = Vsc.window.tabGroups.activeTabGroup.activeTab
+                    }
                     if (!(curTour!.$dev)) await Vsc.commands.executeCommand('workbench.action.files.setActiveEditorReadonlyInSession')
                     break
                 }
