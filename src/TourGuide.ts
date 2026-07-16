@@ -607,11 +607,14 @@ function expandCmds(body: string, acts: ActionId[]): string {
         let args = g1.split(',')
         // ⟪ ⟫
         let txt = g2.replace(/%\[(.+?)\](.*?)%/g, replFxn)
+        let bullet_suf = ''
         switch (args[0]) {
             case 'bi':
                 return `<span class="cmd-bi"><span class="material-symbols-outlined">${args[1]}</span></span>`
+            case 'BM':
+                bullet_suf += '&gt;&thinsp;'
             case 'bm':
-                return `<span class="cmd-bm">${BM_SVG.replace('$label', args[1])}&nbsp;</span>`
+                return `<span class="cmd-bm">${BM_SVG.replace('$label', args[1])}${bullet_suf}</span>`
             case 'bu':
                 return `<a class="cmd-bu" href="#" data-cmd="${args[2]}" title="${txt}"><span class="codicon codicon-${args[1]}"></span><span class="cmd-bu-label">${txt}</span></a>`
             case 'cb':
@@ -628,8 +631,10 @@ function expandCmds(body: string, acts: ActionId[]): string {
             case 'cu':
             case 'cx':
                 return `<code class="cmd-${args[0]}">${txt}</code>`
+            case 'DC':
+                bullet_suf += '&gt;&thinsp;'
             case 'dc':
-                return `<span class="cmd-dc">${DC_SVG.replace('$label', args[1])}&nbsp;</span>`
+                return `<span class="cmd-dc">${DC_SVG.replace('$label', args[1])}${bullet_suf}</span>`
             case 'em':
                 return `<span class="em">${txt}</span>`
             case 'hc':

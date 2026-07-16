@@ -103,6 +103,7 @@ span.cmd-bi span.material-symbols-outlined {
 }
 
 span.cmd-bm {
+    color: hsl(48, 89%, 50%);
     display: inline-flex;
     align-items: center;
     vertical-align: -0.18em;
@@ -113,6 +114,7 @@ span.cmd-bm svg {
 }
 
 span.cmd-dc {
+    color: hsl(312, 75%, 75%);
     display: inline-flex;
     align-items: center;
     vertical-align: -0.22em;
@@ -300,5 +302,5 @@ div.em-bmlist ul {
 
 div.em-bmlist p {
     padding-left: 25px !important;
-    text-indent: -28px !important;
+    text-indent: -24px !important;
 }
