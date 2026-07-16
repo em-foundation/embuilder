@@ -356,9 +356,7 @@ async function resolveTourRefs(steps: Step[]): Promise<Map<string, TourRef>> {
             if (!tourName) throw new Error(`tour ${gnum}/${tnum} not found`)
             const tourUri = Vsc.Uri.joinPath(groupUri, tourName)
             const tour = Yaml.load(await Utils.readText(tourUri)) as Tour
-            const title =
-                `${bundle.title ?? gname} → Tour ${tnum} · ${tour.title}` +
-                (snum ? ` · Stop ${snum}` : '')
+            const title = `${bundle.title ?? gname} → Tour ${tnum} · ${tour.title}`
             refs.set(addr, {
                 addr,
                 title,
@@ -653,7 +651,8 @@ function expandCmds(body: string, acts: ActionId[]): string {
                 const addr = args[1]
                 const ref = curTour!.refs?.get(addr)
                 const title = escapeAttr(ref?.title ?? `Unresolved tour reference: ${addr}`)
-                return `<span class="cmd-tr" data-tr="${addr}" title="${title}"><span class="cmd-tr-flag">${TR_FLAG_SVG}</span><span class="cmd-tr-addr">${addr}</span></span>`
+                const displayAddr = addr.split('/').slice(0, 2).join('/')
+                return `<span class="cmd-tr" data-tr="${addr}" title="${title}"><span class="cmd-tr-flag">${TR_FLAG_SVG}</span><span class="cmd-tr-addr">${displayAddr}</span></span>`
             }
             case 'uc':
                 return '<div class="em-happy">🚧 Reopening Soon 🛠️</div>'
