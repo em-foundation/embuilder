@@ -1,0 +1,26 @@
+<svg width="16" height="16" viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg">
+  <g fill="none" stroke-linecap="round" stroke-linejoin="round">
+    <!-- outer board: slightly stronger so it reads at 16px -->
+    <rect x="2.25" y="2.25" width="11.5" height="11.5" rx="1.1"
+          stroke="#00c99d" stroke-width="1.05"/>
+
+    <!-- circuit traces: thinner than border, same color family as unit icon -->
+    <g stroke="#00c99d" stroke-width="0.7">
+      <path d="M4.75 2.25v3.0"/>
+      <path d="M6.15 6h2.15"/>
+      <path d="M9.95 6h1.3"/>
+      <path d="M13.75 6h-1.05"/>
+      <path d="M4.75 7.1v2.85h2.65"/>
+      <path d="M9.6 11h4.15"/>
+      <path d="M4.75 13.75v-1.25"/>
+    </g>
+
+    <!-- nodes: filled pads survive downscaling better than stroked circles -->
+    <g fill="#00c99d" stroke="none">
+      <circle cx="4.75" cy="6" r="0.75"/>
+      <circle cx="9.05" cy="6" r="0.75"/>
+      <circle cx="11.9" cy="6" r="0.75"/>
+      <circle cx="8.45" cy="11" r="0.75"/>
+    </g>
+  </g>
+</svg>

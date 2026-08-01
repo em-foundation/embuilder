@@ -107,7 +107,7 @@ export class Provider implements Vsc.TreeDataProvider<Node> {
 
     private fileIcon(name: string): { light: Vsc.Uri, dark: Vsc.Uri } {
         if (name === 'em-boards' || name.endsWith('.ini')) {
-            return this.icon('icons/gear.svg')
+            return this.icon('icons/board.svg')
         }
 
         if (name.endsWith('.em.ts')) {
@@ -155,16 +155,45 @@ export class Provider implements Vsc.TreeDataProvider<Node> {
             })
         }
 
-        // package -> buckets
+        // package -> buckets + setup files
         if (element.kind === 'package') {
-            const dirNames = await this.readDirs(element.uri)
-            return dirNames.map((name) => {
-                const bucketUri = Vsc.Uri.joinPath(element.uri, name)
-                const item = new Node(element, 'bucket', bucketUri, name, Vsc.TreeItemCollapsibleState.Collapsed)
-                item.iconPath = this.icon('icons/bucket.svg')
-                item.contextValue = 'embuilder.bucket'
-                return item
+            const entries = await this.readAll(element.uri)
+
+            const nodes = entries.flatMap(({ name, type }) => {
+                const uri = Vsc.Uri.joinPath(element.uri, name)
+
+                if ((type & Vsc.FileType.Directory) !== 0) {
+                    const item = new Node(element, 'bucket', uri, name, Vsc.TreeItemCollapsibleState.Collapsed)
+                    item.iconPath = this.icon('icons/bucket.svg')
+                    item.contextValue = 'embuilder.bucket'
+                    return [item]
+                }
+
+                if (/^setup-.+\.ini$/.test(name)) {
+                    const label = name.replace(/\.ini$/, '')
+                    const item = new Node(element, 'file', uri, label, Vsc.TreeItemCollapsibleState.None)
+                    item.iconPath = this.icon('icons/gear.svg')
+                    item.contextValue = 'embuilder.file'
+                    item.command = {
+                        command: 'vscode.open',
+                        title: '',
+                        arguments: [uri]
+                    }
+                    return [item]
+                }
+
+                return []
             })
+
+            // buckets first, then setup files
+            nodes.sort((a, b) => {
+                const ak = a.kind === 'bucket' ? 0 : 1
+                const bk = b.kind === 'bucket' ? 0 : 1
+                if (ak !== bk) return ak - bk
+                return a.label!.toString().localeCompare(b.label!.toString())
+            })
+
+            return nodes
         }
 
         // bucket/dir -> all children (dirs + files)
