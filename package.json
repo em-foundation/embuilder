@@ -20,7 +20,7 @@
         "typecheck": "tsc -p tsconfig.json --noEmit",
         "vsix": "rm -f *.vsix; TS=$(date -u +%Y%m%d%H%M); npm run build; vsce pack --allow-star-activation; FILE=$(ls *.vsix); mv \"$FILE\" \"${FILE%.vsix}.$TS.vsix\"",
         "release-pack": "git diff --quiet && git diff --cached --quiet && npm run vsix",
-        "release-tag": "git tag -a v$(node -p \"require('./package.json').version\") -m \"EM•Builder v$(node -p \\\"require('./package.json').version\\\")\""
+        "release-tag": "node -e \"const p=require('./package.json'); require('child_process').execSync('git tag -a v'+p.version+' -m \\\"EM•Builder v'+p.version+'\\\"', {stdio:'inherit'})\""
     },
     "devDependencies": {
         "@types/js-yaml": "^4.0.9",
