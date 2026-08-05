@@ -28,6 +28,7 @@
         "@types/node": "^25.0.10",
         "@types/vscode": "^1.80.0",
         "esbuild": "^0.27.2",
+        "node-screenshots": "^0.2.8",
         "typescript": "^5.7.2"
     },
     "categories": [
@@ -567,7 +568,6 @@
     },
     "dependencies": {
         "js-yaml": "^4.1.1",
-        "markdown-it": "^14.1.0",
-        "node-screenshots": "^0.2.8"
+        "markdown-it": "^14.1.0"
     }
 }

@@ -2,8 +2,10 @@ import Cp from 'child_process'
 import Fs from 'fs'
 import Os from 'os'
 import Path from 'path'
-import Screen from 'node-screenshots'
 import Vsc from 'vscode'
+
+import type * as NodeScreenshots from "node-screenshots"
+import { createRequire } from "module";
 
 export const EXT_ID = 'the-em-foundation.em-builder'
 
@@ -63,6 +65,11 @@ export function getDistro(): { package: string, bucket: string } | null {
 
 export function getProps(): ReadonlyMap<string, string> {
     return curPropMap
+}
+
+function getScreen(): typeof NodeScreenshots {
+    const req = createRequire(Path.join(rootPath(), 'package.json'))
+    return req('node-screenshots') as typeof NodeScreenshots
 }
 
 export function getVersCli(): string {
@@ -190,6 +197,7 @@ export interface ScreenshotOptions {
 }
 
 export async function screenshot(relPath: string, opts: ScreenshotOptions = {}): Promise<string> {
+    const Screen = getScreen()
     const win = Screen.Window.all().find(w =>
         w.isFocused() &&
         !w.isMinimized() &&

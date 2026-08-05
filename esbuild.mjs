@@ -6,5 +6,5 @@ await build({
     format: 'cjs',
     platform: 'node',
     outfile: 'out/extension.js',
-    external: ['vscode', 'node-screenshots', 'node-screenshots-*'],
+    external: ['vscode'],
 })
