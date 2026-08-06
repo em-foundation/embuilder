@@ -198,8 +198,29 @@ export interface ScreenshotOptions {
 
 export async function screenshot(relPath: string, opts: ScreenshotOptions = {}): Promise<string> {
     const Screen = getScreen()
-    const win = Screen.Window.all().find(w => w.isFocused() && !w.isMinimized())
-    if (win === undefined) throw new Error('embuilder.screenshot: focused window not found')
+    const windows = Screen.Window.all()
+
+    // TODO - remove debug
+    console.log(`WINDOW COUNT = ${windows.length}`)
+    for (const w of windows) {
+        console.log('SCREENSHOT WINDOW', {
+            focused: w.isFocused(),
+            minimized: w.isMinimized(),
+            appName: w.appName(),
+            title: w.title(),
+        })
+    }
+
+    const win = Screen.Window.all().find(w =>
+        w.isFocused() &&
+        !w.isMinimized() &&
+        /^(Code|Visual Studio Code)$/i.test(w.appName())
+    )
+    if (win === undefined) {
+        throw new Error(
+            "embuilder.screenshot: couldn't find an active, focused VS Code window on this host - ensure screen recording is enabled"
+        )
+    }
     await delay(opts.delayMs ?? 0)
     const file = Path.join(rootPath(), `${relPath}.png`)
     Fs.mkdirSync(Path.dirname(file), { recursive: true })
