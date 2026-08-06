@@ -198,12 +198,8 @@ export interface ScreenshotOptions {
 
 export async function screenshot(relPath: string, opts: ScreenshotOptions = {}): Promise<string> {
     const Screen = getScreen()
-    const win = Screen.Window.all().find(w =>
-        w.isFocused() &&
-        !w.isMinimized() &&
-        /visual studio code|code/i.test(`${w.appName()} ${w.title()}`)
-    )
-    if (win === undefined) throw new Error('embuilder.screenshot: VS Code window not found')
+    const win = Screen.Window.all().find(w => w.isFocused() && !w.isMinimized())
+    if (win === undefined) throw new Error('embuilder.screenshot: focused window not found')
     await delay(opts.delayMs ?? 0)
     const file = Path.join(rootPath(), `${relPath}.png`)
     Fs.mkdirSync(Path.dirname(file), { recursive: true })
@@ -211,7 +207,7 @@ export async function screenshot(relPath: string, opts: ScreenshotOptions = {}):
     const png = await image.toPng(true)
     Fs.writeFileSync(file, png)
     if (opts.notify) {
-        Vsc.window.showInformationMessage(`Saved '.screenshots/${Path.basename(file)}'`)
+        Vsc.window.showInformationMessage(`Saved '.screenshots/${Path.basename(file)}' — ${win.appName()}`)
     }
     return file
 }
