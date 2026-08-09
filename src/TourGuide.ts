@@ -168,9 +168,16 @@ export async function prev() {
     await sync()
 }
 
+
 export async function refresh() {
-    stepIdx -= 1
-    next()
+    if (!curTour) return
+    for (const file of fileTab) {
+        if (!file.openedTab) continue
+        await Vsc.window.tabGroups.close(file.openedTab)
+        file.openedTab = undefined
+    }
+    await execCmds()
+    await sync()
 }
 
 export async function restart() {
