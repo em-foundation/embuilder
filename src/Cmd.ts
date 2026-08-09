@@ -180,9 +180,8 @@ export async function revealUnit() {
 export async function reset() {
     let rsp = await Vsc.window.showErrorMessage('Have you committed and pushed all workspace changes?', { modal: true }, 'Proceed')
     if (!rsp) return
-    rsp = await Vsc.window.showErrorMessage(`Execute '$HOME/EM/reset.sh' once we exit the EM•porium...`, { modal: true }, 'Proceed')
+    rsp = await Vsc.window.showErrorMessage(`Execute 'npm start -- --reset' once we exit the EM•porium...`, { modal: true }, 'Proceed')
     if (!rsp) return
-    Utils.writeScript('reset')
     await Vsc.commands.executeCommand('workbench.action.quit')
 }
 

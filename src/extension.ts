@@ -158,8 +158,6 @@ export async function activate(ctx: Vsc.ExtensionContext) {
 
         await Cmd.initSetup()
 
-        Utils.writeScript('launch')
-
         Vsc.commands.executeCommand('workbench.action.terminal.focus')
 
         Cmd.refresh(true)
