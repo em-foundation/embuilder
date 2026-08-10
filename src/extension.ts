@@ -23,8 +23,6 @@ export async function activate(ctx: Vsc.ExtensionContext) {
         const ws = Vsc.workspace.workspaceFolders?.[0]
         if (!ws) return
 
-        await Utils.provision(ctx)
-
         for (const cmd of ['em.build', 'em.buildLoad', 'em.buildMeta']) {
             ctx.subscriptions.push(Vsc.commands.registerCommand(cmd, (node: ContentView.Node) => Cmd.build(node.uri, cmd)))
         }

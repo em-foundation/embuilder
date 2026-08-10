@@ -148,26 +148,6 @@ export async function newUnit(uri: Vsc.Uri, uks: string, content: string): Promi
     return Vsc.Uri.joinPath(uri, `${uname}.em.ts`)
 }
 
-export async function provision(ctx: Vsc.ExtensionContext) {
-    if (Fs.existsSync(toolsPath())) return
-    await Vsc.window.withProgress(
-        { location: Vsc.ProgressLocation.Notification, title: 'EM•Script: provisioning…', cancellable: false },
-        async () => {
-            console.log('*** provision: npm ci')
-            const r = Cp.spawnSync('npm', ['ci'], {
-                cwd: rootPath(),
-                shell: true,
-                encoding: 'utf8'
-            })
-
-            if (r.status) {
-                const msg = (r.stderr || r.stdout || '').trim()
-                throw new Error(msg || `npm ci failed: status = ${r.status}, msg = ${msg}`)
-            }
-        }
-    )
-}
-
 export async function readText(uri: Vsc.Uri): Promise<string> {
     return UTF8.decode(await Vsc.workspace.fs.readFile(uri))
 }
