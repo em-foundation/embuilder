@@ -57,8 +57,26 @@ export function $clone() { return { $T, ...em$template } }
 
 export async function bindBoard() {
     const curName = StatusItems.boardC.get()
-    const newName = await Vsc.window.showQuickPick(StatusItems.boardC.pickList())
-    const name = newName ? StatusItems.boardC.trim(newName) : curName
+    const items = StatusItems.boardC.pickList()
+    const qp = Vsc.window.createQuickPick()
+    qp.items = items.map(label => ({ label }))
+    const current = qp.items.find(item =>
+        StatusItems.boardC.trim(item.label) == curName
+    )
+    if (current) qp.activeItems = [current]
+    const newName = await new Promise<string | undefined>(resolve => {
+        qp.onDidAccept(() => {
+            resolve(qp.selectedItems[0]?.label)
+            qp.hide()
+        })
+        qp.onDidHide(() => {
+            resolve(undefined)
+            qp.dispose()
+        })
+        qp.show()
+    })
+    if (!newName) return
+    const name = StatusItems.boardC.trim(newName)
     await StatusItems.boardC.set(name)
 }
 

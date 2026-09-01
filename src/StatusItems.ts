@@ -11,6 +11,7 @@ export const VCD_COLOR = '#f0b000'
 abstract class StatusItem {
     private static UNK = '<empty>'
     private static COMMENT = '## **** DO NOT EDIT THIS LINE ****'
+    protected static CURRENT = '  $(check) current'
     private readonly key: string
     private readonly pre: string
     private readonly prop: string
@@ -62,7 +63,10 @@ abstract class StatusItem {
     }
     protected setAux(name: string) { }
     trim(name: string): string {
-        return name.substring(this.pre.length).trim()
+        return name
+            .substring(this.pre.length)
+            .replace(StatusItem.CURRENT, '')
+            .trim()
     }
 }
 
@@ -72,7 +76,10 @@ export const boardC = new class Board extends StatusItem {
         super('board', Utils.PROP_BOARD, 'em.bindBoard', 'Board – click to edit', '$(circuit-board) Board', Board.PRE)
     }
     pickList(): string[] {
-        return mkBoardNames().map(sn => `${Board.PRE}${sn}`)
+        const current = this.get() || '<empty>'
+        return mkBoardNames().map(sn =>
+            `${Board.PRE}${sn}${sn == current ? StatusItem.CURRENT : ''}`
+        )
     }
     async setAux(name: string) {
         if (!name || name == '<empty' || name == '<bare-metal>') {
@@ -184,5 +191,3 @@ function mkSetupNames(): string[] {
     }
     return res
 }
-
-
