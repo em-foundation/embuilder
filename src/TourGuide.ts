@@ -110,6 +110,8 @@ let stepIdx: number
 let stepEnd: number
 let tedMonitor: Vsc.Disposable | null = null
 let watcher: Vsc.FileSystemWatcher | null = null
+let devRefreshBusy = false
+let devRefreshPending: Vsc.Uri | null = null
 const tourStack: TourLocation[] = []
 
 export async function init(ctx: Vsc.ExtensionContext) {
@@ -243,6 +245,34 @@ function curTourTitle(): string {
     return `${curTour!.bname} → Tour ${curTour!.tnum} · ${curTour!.title}`
 }
 
+async function refreshDevTour(changed: Vsc.Uri) {
+    if (devRefreshBusy) {
+        devRefreshPending = changed
+        return
+    }
+
+    devRefreshBusy = true
+    try {
+        let pending: Vsc.Uri | null = changed
+        while (pending) {
+            const uri = pending
+            devRefreshPending = null
+
+            if (!curTour || uri.toString() != curTour.uri?.toString()) break
+
+            const targetStep = stepIdx
+            const devmode = curTour.$dev
+            await gotoTour(uri, targetStep, devmode)
+
+            pending = devRefreshPending
+        }
+    }
+    finally {
+        devRefreshBusy = false
+        devRefreshPending = null
+    }
+}
+
 async function gotoTour(uri: Vsc.Uri, targetStep = 0, devmode?: boolean, pushCurrent = false) {
     if (pushCurrent && curTour?.uri) {
         tourStack.push({ uri: curTour.uri, stepIdx, devmode: curTour.$dev, title: curTourTitle() })
@@ -291,11 +321,11 @@ async function gotoTour(uri: Vsc.Uri, targetStep = 0, devmode?: boolean, pushCur
         watcher = Vsc.workspace.createFileSystemWatcher('**/*.emtour')
         watcher.onDidChange(async changed => {
             if (!curTour || changed.toString() != curTour.uri?.toString()) return
-            await gotoTour(changed, stepIdx, curTour.$dev)
+            await refreshDevTour(changed)
         })
     }
     monitor()
-    next()
+    await next()
 }
 
 async function execCmds() {
