@@ -15,6 +15,7 @@ interface Decor {
 interface File {
     readonly uri: Vsc.Uri
     readonly decorMap: Map<string, Decor>
+    readonly folds: Vsc.Selection[]
     doc?: Vsc.TextDocument
     ted?: Vsc.TextEditor
     openedTab?: Vsc.Tab
@@ -133,6 +134,7 @@ async function leaveTour(final: boolean) {
     for (let file of fileTab ?? []) {
         if (!file.doc) continue
         let ted = await Vsc.window.showTextDocument(file.doc, OPEN_OPTS)
+        await clearFolds(file)
         if (file.decorMap) file.decorMap.forEach((v, k) => ted.setDecorations(v.type, []))
         await Vsc.commands.executeCommand(
             'workbench.action.files.resetActiveEditorReadonlyInSession'
@@ -276,7 +278,11 @@ async function gotoTour(uri: Vsc.Uri, targetStep = 0, devmode?: boolean, pushCur
     fileTab = []
     for (let fn of curTour!.files ?? []) {
         const baseUri = fn.startsWith('.') ? Utils.toursUri() : Utils.workUri()
-        fileTab.push({ uri: Vsc.Uri.joinPath(baseUri, fn.replace(':', '/')), decorMap: new Map<string, Decor>() })
+        fileTab.push({
+            uri: Vsc.Uri.joinPath(baseUri, fn.replace(':', '/')),
+            decorMap: new Map<string, Decor>(),
+            folds: []
+        })
     }
     await closeAllExceptWelcome()
     await Vsc.commands.executeCommand('embuilder.showWelcome')
@@ -301,6 +307,7 @@ async function execCmds() {
             keep.add(Number(segs[1]) - 1)
     }
     for (const [idx, file] of fileTab.entries()) {
+        await clearFolds(file)
         DecoratorFactory.clear(file)
 
         if (file.openedTab && !keep.has(idx)) {
@@ -313,6 +320,15 @@ async function execCmds() {
             let segs = cmd.trim().split(/\s+/)
             let file = segs.length > 1 && Number(segs[1]) ? fileTab[Number(segs[1]) - 1] : null
             switch (segs[0]) {
+                case 'fold': {
+                    let ted = file!.ted!
+                    let sel = new Vsc.Selection(Number(segs[2]) - 1, 0, Number(segs[3]), 0)
+                    ted.selection = sel
+                    await Vsc.commands.executeCommand('editor.createFoldingRangeFromSelection')
+                    file!.folds.push(sel)
+                    parkCursor(ted)
+                    break
+                }
                 case 'mark': {
                     DecoratorFactory.mark(file!, segs[2], Number(segs[3]))
                     break
@@ -334,6 +350,21 @@ async function execCmds() {
             }
         }
     } catch (err) { console.log(err) }
+}
+
+async function clearFolds(file: File) {
+    if (!file.doc || !file.folds.length) return
+    let ted = await Vsc.window.showTextDocument(file.doc, OPEN_OPTS)
+    ted.selections = file.folds
+    await Vsc.commands.executeCommand('editor.removeManualFoldingRanges')
+    file.folds.length = 0
+    parkCursor(ted)
+}
+
+function parkCursor(ted: Vsc.TextEditor) {
+    let line = ted.document.lineCount - 1
+    let col = ted.document.lineAt(line).text.length
+    ted.selection = new Vsc.Selection(line, col, line, col)
 }
 
 async function resolveTourRefs(steps: Step[]): Promise<Map<string, TourRef>> {
