@@ -245,6 +245,53 @@ function curTourTitle(): string {
     return `${curTour!.bname} → Tour ${curTour!.tnum} · ${curTour!.title}`
 }
 
+async function reloadDevTour(changed: Vsc.Uri) {
+    if (!curTour || changed.toString() != curTour.uri?.toString()) return
+
+    const src = await Utils.readText(changed)
+    const tour = Yaml.load(src) as Tour
+
+    tour.uri = curTour.uri
+    tour.bname = curTour.bname
+    tour.gnum = curTour.gnum
+    tour.tnum = curTour.tnum
+    tour.$dev = curTour.$dev
+    tour.refs = await resolveTourRefs(tour.steps)
+
+    let idx = 0
+    src.split('\n').forEach((line, k) => {
+        if (line.match(/^[\s\-]+cmds/)) tour.steps[idx++].srcLine = k + 1
+    })
+
+    const filesChanged =
+        tour.files.length != curTour.files.length ||
+        tour.files.some((fn, idx) => fn != curTour!.files[idx])
+
+    curTour = tour
+    stepEnd = curTour.steps.length - 1
+    stepIdx = Math.max(0, Math.min(stepIdx, stepEnd))
+
+    if (filesChanged) {
+        for (const file of fileTab) {
+            await clearFolds(file)
+            DecoratorFactory.clear(file)
+            if (file.openedTab) await Vsc.window.tabGroups.close(file.openedTab)
+        }
+
+        fileTab = []
+        for (const fn of curTour.files ?? []) {
+            const baseUri = fn.startsWith('.') ? Utils.toursUri() : Utils.workUri()
+            fileTab.push({
+                uri: Vsc.Uri.joinPath(baseUri, fn.replace(':', '/')),
+                decorMap: new Map<string, Decor>(),
+                folds: []
+            })
+        }
+    }
+
+    await refresh()
+}
+
 async function refreshDevTour(changed: Vsc.Uri) {
     if (devRefreshBusy) {
         devRefreshPending = changed
@@ -258,11 +305,7 @@ async function refreshDevTour(changed: Vsc.Uri) {
             const uri = pending
             devRefreshPending = null
 
-            if (!curTour || uri.toString() != curTour.uri?.toString()) break
-
-            const targetStep = stepIdx
-            const devmode = curTour.$dev
-            await gotoTour(uri, targetStep, devmode)
+            await reloadDevTour(uri)
 
             pending = devRefreshPending
         }
