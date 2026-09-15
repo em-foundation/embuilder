@@ -263,9 +263,11 @@ async function reloadDevTour(changed: Vsc.Uri) {
         if (line.match(/^[\s\-]+cmds/)) tour.steps[idx++].srcLine = k + 1
     })
 
+    const newFiles = tour.files ?? []
+    const oldFiles = curTour.files ?? []
     const filesChanged =
-        tour.files.length != curTour.files.length ||
-        tour.files.some((fn, idx) => fn != curTour!.files[idx])
+        newFiles.length != oldFiles.length ||
+        newFiles.some((fn, idx) => fn != oldFiles[idx])
 
     curTour = tour
     stepEnd = curTour.steps.length - 1
@@ -279,7 +281,7 @@ async function reloadDevTour(changed: Vsc.Uri) {
         }
 
         fileTab = []
-        for (const fn of curTour.files ?? []) {
+        for (const fn of newFiles) {
             const baseUri = fn.startsWith('.') ? Utils.toursUri() : Utils.workUri()
             fileTab.push({
                 uri: Vsc.Uri.joinPath(baseUri, fn.replace(':', '/')),
