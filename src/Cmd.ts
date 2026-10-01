@@ -128,12 +128,6 @@ export async function gotoPulseView() {
     await Vsc.env.openExternal(Vsc.Uri.parse('https://www.sigrok.org/wiki/Downloads'))
 }
 
-export async function localCopy(node: ContentView.Node) {
-    const uri = Utils.localCopy(node.uri.fsPath)
-    ContentView.refresh()
-    await ContentView.revealUri(uri)
-}
-
 export async function initSetup() {
     Utils.refreshProps()
     const brd = Utils.getBoard()
