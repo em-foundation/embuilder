@@ -131,7 +131,7 @@ export async function gotoPulseView() {
 export async function initSetup() {
     Utils.refreshProps()
     const brd = Utils.getBoard()
-    await StatusItems.boardC.set(brd ? brd : 'rpi.2040://PI_PICO-sim$$')
+    await StatusItems.boardC.set(brd ? brd : 'rpi.2040://PI_PICO-sim$$', false)
 }
 
 export async function newContainer(node: ContentView.Node, cks: string) {

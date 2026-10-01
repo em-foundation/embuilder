@@ -42,7 +42,7 @@ abstract class StatusItem {
         this.display(this.get())
     }
     abstract pickList(): string[]
-    async set(name: string) {
+    async set(name: string, showBoard: boolean = true) {
         const oldDistro = (this.prop == Utils.PROP_BOARD) ? Utils.getDistro() : null
         name = (name == '<empty>') ? '' : name
         this.display(name)
@@ -61,7 +61,7 @@ abstract class StatusItem {
         }
         Fs.writeFileSync(ipath, Buffer.from(lines.join('\n'), 'utf-8'))
         Utils.refreshProps()
-        await this.setAux(name)
+        await this.setAux(name, showBoard)
         if (this.prop == Utils.PROP_BOARD) {
             const newDistro = Utils.getDistro()
             if (oldDistro?.package != newDistro?.package ||
@@ -70,7 +70,7 @@ abstract class StatusItem {
             }
         }
     }
-    protected async setAux(name: string) { }
+    protected async setAux(name: string, showBoard: boolean) { }
     trim(name: string): string {
         return name
             .substring(this.pre.length)
@@ -91,7 +91,7 @@ export const boardC = new class Board extends StatusItem {
         )
     }
 
-    async setAux(name: string) {
+    async setAux(name: string, showBoard: boolean) {
         if (!name || name == '<empty>') {
             await setupC.set('')
             return
@@ -99,6 +99,7 @@ export const boardC = new class Board extends StatusItem {
         if (name == '<bare-metal>') return
         const [pn, bn] = mkNames(name)
         await setupC.set(`${pn}://default`)
+        if (!showBoard) return
         const bp = Path.join(Utils.workPath(), pn, `Board-${bn}.png`)
         if (!Fs.existsSync(bp)) return
         await Vsc.commands.executeCommand(
