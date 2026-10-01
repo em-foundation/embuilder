@@ -49,7 +49,7 @@ export async function revealUri(uri: Vsc.Uri, tailSegs = 3) {
         const kids = await curView.getChildren(parent)
         const next = kids.find(k => k.label?.toString() === seg)
         if (!next) return
-        await curTree.reveal(next, { select: true, focus: true, expand: true })
+        await curTree.reveal(next, { select: true, focus: false, expand: true })
         parent = next
     }
 }

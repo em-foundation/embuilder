@@ -272,7 +272,6 @@ async function sync() {
             curTour!.uri!,
             { viewColumn: 2 }
         )
-
         let ln =
             step.srcLine && stepIdx != 0
                 ? step.srcLine
@@ -296,6 +295,10 @@ async function sync() {
     let ted = await Vsc.window.showTextDocument(
         file.doc!,
         OPEN_OPTS
+    )
+
+    await Vsc.commands.executeCommand(
+        'embuilder.revealActiveUnit'
     )
 
     ted.revealRange(
@@ -582,6 +585,9 @@ async function gotoTour(
 }
 
 async function execCmds() {
+    await Vsc.commands.executeCommand(
+        'embuilder.defaultContentView'
+    )
     const cmds =
         curTour!.steps[stepIdx].cmds ?? []
 
@@ -710,6 +716,10 @@ async function execCmds() {
     catch (err) {
         console.log(err)
     }
+    if (keep.size)
+        await Vsc.commands.executeCommand(
+            'embuilder.revealActiveUnit'
+        )
 }
 
 async function clearFolds(file: File) {
