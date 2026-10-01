@@ -43,6 +43,7 @@ abstract class StatusItem {
     }
     abstract pickList(): string[]
     async set(name: string) {
+        const oldDistro = (this.prop == Utils.PROP_BOARD) ? Utils.getDistro() : null
         name = (name == '<empty>') ? '' : name
         this.display(name)
         await Utils.updateSettings('emscript', this.key, name ? name : undefined)
@@ -60,9 +61,16 @@ abstract class StatusItem {
         }
         Fs.writeFileSync(ipath, Buffer.from(lines.join('\n'), 'utf-8'))
         Utils.refreshProps()
-        this.setAux(name)
+        await this.setAux(name)
+        if (this.prop == Utils.PROP_BOARD) {
+            const newDistro = Utils.getDistro()
+            if (oldDistro?.package != newDistro?.package ||
+                oldDistro?.bucket != newDistro?.bucket) {
+                await Vsc.commands.executeCommand('embuilder.refresh')
+            }
+        }
     }
-    protected setAux(name: string) { }
+    protected async setAux(name: string) { }
     trim(name: string): string {
         return name
             .substring(this.pre.length)
