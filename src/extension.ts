@@ -65,6 +65,7 @@ export async function activate(ctx: Vsc.ExtensionContext) {
         ctx.subscriptions.push(Vsc.commands.registerCommand('emgrammar.top', GrammarView.top))
 
         ctx.subscriptions.push(Vsc.commands.registerCommand('embuilder.build', Cmd.build))
+        ctx.subscriptions.push(Vsc.commands.registerCommand('embuilder.defaultContentView', Cmd.defaultContentView))
         ctx.subscriptions.push(Vsc.commands.registerCommand('embuilder.downloadVcd', Cmd.downloadVcd))
         ctx.subscriptions.push(Vsc.commands.registerCommand('embuilder.gotoPulseView', Cmd.gotoPulseView))
         ctx.subscriptions.push(Vsc.commands.registerCommand('embuilder.refresh', Cmd.refresh))

@@ -101,6 +101,10 @@
                 "icon": "icons/load.svg"
             },
             {
+                "command": "embuilder.defaultContentView",
+                "title": "EM•Builder: Default Content View"
+            },
+            {
                 "command": "embuilder.downloadVcd",
                 "title": "EM•Builder: Download wokwi.vcd"
             },

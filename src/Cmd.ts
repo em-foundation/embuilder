@@ -112,6 +112,10 @@ export async function clean() {
 
 let vcdBusy = false
 
+export async function defaultContentView() {
+    await ContentView.defaultView()
+}
+
 export async function downloadVcd() {
     if (vcdBusy) return
     vcdBusy = true

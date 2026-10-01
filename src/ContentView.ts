@@ -9,6 +9,17 @@ let curRoot: Node | null = null
 let curView: Provider
 let curTree: Vsc.TreeView<Node>
 
+export async function defaultView() {
+    await Vsc.commands.executeCommand('workbench.actions.treeView.embuilder.content.collapseAll')
+    if (curRoot) {
+        await curTree.reveal(curRoot, {
+            select: false,
+            focus: false,
+            expand: true
+        })
+    }
+}
+
 export function getNode(uri: Vsc.Uri): Node | undefined {
     return curNodeMap.get(uri.path)
 }
