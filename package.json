@@ -17,6 +17,7 @@
     "main": "./out/extension.js",
     "scripts": {
         "build": "npm run typecheck && node esbuild.mjs",
+        "host": "code --extensionDevelopmentPath=\"$(pwd -W)\" \"$(cd ../emporium && pwd -W)\"",
         "typecheck": "tsc -p tsconfig.json --noEmit",
         "vsix": "rm -f *.vsix; TS=$(date -u +%Y%m%d%H%M); npm run build; vsce pack --allow-star-activation; FILE=$(ls *.vsix); mv \"$FILE\" \"${FILE%.vsix}.$TS.vsix\"",
         "release-pack": "git diff --quiet && git diff --cached --quiet && npm run vsix",
