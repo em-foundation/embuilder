@@ -15,9 +15,10 @@ abstract class StatusItem {
     private readonly key: string
     private readonly pre: string
     private readonly prop: string
-    private readonly status = Vsc.window.createStatusBarItem(Vsc.StatusBarAlignment.Left)
+    private readonly status: Vsc.StatusBarItem
     private readonly title: string
-    constructor(key: string, prop: string, cmd: string, tip: string, title: string, pre: string) {
+    constructor(key: string, prop: string, cmd: string, tip: string, title: string, pre: string, priority: number) {
+        this.status = Vsc.window.createStatusBarItem(Vsc.StatusBarAlignment.Left, priority)
         this.key = key
         this.pre = pre
         this.prop = prop
@@ -38,13 +39,13 @@ abstract class StatusItem {
     }
     init(ctx: Vsc.ExtensionContext) {
         ctx.subscriptions.push(this.status)
-        this.display('')
+        this.display(this.get())
     }
     abstract pickList(): string[]
     async set(name: string) {
         name = (name == '<empty>') ? '' : name
         this.display(name)
-        Utils.updateSettings('emscript', this.key, name ? name : undefined)
+        await Utils.updateSettings('emscript', this.key, name ? name : undefined)
         const ipath = Path.join(Utils.workPath(), 'emscript.ini')
         if (!Fs.existsSync(ipath)) return  // should always exist ???
         let lines = Fs.readFileSync(ipath, 'utf-8').split('\n')
@@ -73,7 +74,7 @@ abstract class StatusItem {
 export const boardC = new class Board extends StatusItem {
     private static PRE = '$(circuit-board)  '
     constructor() {
-        super('board', Utils.PROP_BOARD, 'em.bindBoard', 'Board – click to edit', '$(circuit-board) Board', Board.PRE)
+        super('board', Utils.PROP_BOARD, 'em.bindBoard', 'Board – click to edit', '$(circuit-board) Board', Board.PRE, 20)
     }
     pickList(): string[] {
         const current = this.get() || '<empty>'
@@ -81,23 +82,29 @@ export const boardC = new class Board extends StatusItem {
             `${Board.PRE}${sn}${sn == current ? StatusItem.CURRENT : ''}`
         )
     }
+
     async setAux(name: string) {
-        if (!name || name == '<empty' || name == '<bare-metal>') {
+        if (!name || name == '<empty>') {
             await setupC.set('')
             return
         }
+        if (name == '<bare-metal>') return
         const [pn, bn] = mkNames(name)
         await setupC.set(`${pn}://default`)
         const bp = Path.join(Utils.workPath(), pn, `Board-${bn}.png`)
         if (!Fs.existsSync(bp)) return
-        await Vsc.commands.executeCommand('vscode.open', Vsc.Uri.file(bp), { viewColumn: 1, preview: false })
+        await Vsc.commands.executeCommand(
+            'vscode.open',
+            Vsc.Uri.file(bp),
+            { viewColumn: 1, preview: false }
+        )
     }
 }
 
 export const setupC = new class Setup extends StatusItem {
     private static PRE = '$(gear)  '
     constructor() {
-        super('setup', Utils.PROP_EXTENDS, 'em.bindSetup', 'Setup – click to edit', '$(gear) Setup', Setup.PRE)
+        super('setup', Utils.PROP_EXTENDS, 'em.bindSetup', 'Setup – click to edit', '$(gear) Setup', Setup.PRE, 10)
     }
     pickList(): string[] {
         return mkSetupNames().map(sn => `${Setup.PRE}${sn}`)
@@ -136,7 +143,7 @@ export const vcdC = new class Download {
 }
 
 export function init(ctx: Vsc.ExtensionContext) {
-    const vers = Vsc.window.createStatusBarItem(Vsc.StatusBarAlignment.Left)
+    const vers = Vsc.window.createStatusBarItem(Vsc.StatusBarAlignment.Left, 30)
     vers.text = `$(terminal) EM•Script v${Utils.getVersCliFull()}`
     vers.color = EM_COLOR
     vers.show()
