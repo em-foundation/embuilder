@@ -1,3 +1,4 @@
+import * as ContentView from './ContentView'
 import * as MdMod from 'markdown-it'
 import * as Path from 'path'
 import * as Utils from './Utils'
@@ -49,6 +50,7 @@ interface Tour {
     readonly files: string[]
     readonly actions: string[]
     readonly steps: Step[]
+    readonly reveal?: ActionId
     uri?: Vsc.Uri
     bname?: string
     gnum?: string
@@ -297,9 +299,10 @@ async function sync() {
         OPEN_OPTS
     )
 
-    await Vsc.commands.executeCommand(
-        'embuilder.revealActiveUnit'
-    )
+    if (curTour!.reveal === undefined)
+        await Vsc.commands.executeCommand(
+            'embuilder.revealActiveUnit'
+        )
 
     ted.revealRange(
         mkRange(Number(step.focus[1])),
@@ -588,6 +591,10 @@ async function execCmds() {
     await Vsc.commands.executeCommand(
         'embuilder.defaultContentView'
     )
+
+    if (curTour!.reveal !== undefined)
+        await revealTarget(curTour!.reveal)
+
     const cmds =
         curTour!.steps[stepIdx].cmds ?? []
 
@@ -669,6 +676,16 @@ async function execCmds() {
                     break
                 }
 
+                case 'reveal': {
+                    await revealTarget(
+                        Number(segs[1])
+                            ? Number(segs[1])
+                            : segs[1]
+                    )
+
+                    break
+                }
+
                 case 'open': {
                     if (!file!.openedTab) {
                         file!.doc =
@@ -720,6 +737,22 @@ async function execCmds() {
         await Vsc.commands.executeCommand(
             'embuilder.revealActiveUnit'
         )
+
+}
+
+async function revealTarget(
+    target: ActionId
+) {
+    const uri =
+        typeof target == 'number'
+            ? fileTab[target - 1]?.uri
+            : Vsc.Uri.joinPath(
+                Utils.workUri(),
+                target.replace(':', '/')
+            )
+
+    if (uri)
+        await ContentView.revealUri(uri)
 }
 
 async function clearFolds(file: File) {

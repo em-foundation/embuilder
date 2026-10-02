@@ -41,15 +41,44 @@ export async function reveal(node?: Node) {
     await curTree.reveal(n, { select: true, focus: true, expand: true })
 }
 
-export async function revealUri(uri: Vsc.Uri, tailSegs = 3) {
+export async function revealUri(uri: Vsc.Uri) {
     if (!curRoot) return
-    const segs = uri.path.split('/').filter(Boolean).slice(-tailSegs)
+
+    const rel =
+        Vsc.workspace
+            .asRelativePath(uri, false)
+            .replace(/\\/g, '/')
+
+    const segs =
+        rel
+            .split('/')
+            .filter(Boolean)
+
+    if (segs[0] == 'workspace')
+        segs.shift()
+
     let parent: Node = curRoot
+
     for (const seg of segs) {
-        const kids = await curView.getChildren(parent)
-        const next = kids.find(k => k.label?.toString() === seg)
+        const kids =
+            await curView.getChildren(parent)
+
+        const next =
+            kids.find(
+                k => k.label?.toString() == seg
+            )
+
         if (!next) return
-        await curTree.reveal(next, { select: true, focus: false, expand: true })
+
+        await curTree.reveal(
+            next,
+            {
+                select: true,
+                focus: false,
+                expand: true
+            }
+        )
+
         parent = next
     }
 }
