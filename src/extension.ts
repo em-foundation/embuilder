@@ -1,6 +1,7 @@
 import * as Vsc from 'vscode'
 
 import * as Cmd from './Cmd'
+import * as ScopeView from './ScopeView'
 import * as ContentView from './ContentView'
 import * as GrammarView from './GrammarView'
 import * as SemTok from './SemTok'
@@ -39,6 +40,7 @@ export async function activate(ctx: Vsc.ExtensionContext) {
         ctx.subscriptions.push(Vsc.commands.registerCommand('em.tour.screenshot', TourGuide.screenshot))
         ctx.subscriptions.push(Vsc.commands.registerCommand('em.tour.slideshow', TourGuide.slideshow))
 
+        ScopeView.init(ctx)
         ContentView.init(ctx)
         await Utils.focusBuilder()
 

@@ -44,6 +44,10 @@
     "contributes": {
         "commands": [
             {
+                "command": "embuilder.showScope",
+                "title": "EM•Builder: Show EM•Scope"
+            },
+            {
                 "command": "em.bindBoard",
                 "title": "EM•Builder: Bind Board..."
             },
