@@ -1,6 +1,7 @@
 import * as Vsc from 'vscode'
 import * as Fs from 'fs/promises'
 import * as Path from 'path'
+import { homedir } from 'os'
 import { createRequire } from 'module'
 import { spawn } from 'child_process'
 import * as Yaml from 'js-yaml'
@@ -17,23 +18,37 @@ const fields = [
 ] as const
 type ViewerSettings = { projectionSeconds?: number }
 
-const panels = new Map<string, Vsc.WebviewPanel>()
+let currentPanel: Vsc.WebviewPanel | undefined
+let currentRoot: string | undefined
+let rootListeners: Vsc.Disposable[] = []
 
 export function init(ctx: Vsc.ExtensionContext) {
     const output = Vsc.window.createOutputChannel('EM•Scope')
     ctx.subscriptions.push(output, Vsc.commands.registerCommand('embuilder.showScope', async (uri?: Vsc.Uri) => {
         const workspace = Vsc.workspace.workspaceFolders?.[0]?.uri
         if (!workspace) { Vsc.window.showErrorMessage('Open an Emporium workspace first.'); return }
-        const root = uri ?? Vsc.Uri.joinPath(workspace, 'captures')
+        const savedRoot = ctx.workspaceState.get<string>('embuilder.scope.lastRoot')
+        const root = uri ?? (savedRoot ? Vsc.Uri.file(savedRoot) : Vsc.Uri.joinPath(workspace, 'captures'))
         if (root.scheme !== 'file') { Vsc.window.showErrorMessage('EM•Scope requires a local capture folder.'); return }
         const key = root.toString()
-        const existing = panels.get(key)
-        if (existing) { existing.reveal(); return }
-        const panel = Vsc.window.createWebviewPanel('embuilder.scope', 'EM•Scope', Vsc.ViewColumn.Active, { enableScripts: true, retainContextWhenHidden: true })
-        panels.set(key, panel)
-        ctx.subscriptions.push(panel)
+        await ctx.workspaceState.update('embuilder.scope.lastRoot', root.fsPath)
+        if (currentPanel && (!uri || currentRoot === key)) { currentPanel.reveal(); return }
+        for (const listener of rootListeners) listener.dispose()
+        rootListeners = []
+        if (!currentPanel) {
+            currentPanel = Vsc.window.createWebviewPanel('embuilder.scope', 'EM•Scope', Vsc.ViewColumn.Active, { enableScripts: true, retainContextWhenHidden: true })
+            ctx.subscriptions.push(currentPanel)
+            currentPanel.onDidDispose(() => {
+                currentPanel = undefined; currentRoot = undefined
+                for (const listener of rootListeners) listener.dispose()
+                rootListeners = []
+            })
+        }
+        const panel = currentPanel
+        currentRoot = key
+        panel.reveal()
         let disposed = false
-        panel.onDidDispose(() => { disposed = true; panels.delete(key) })
+        rootListeners.push(panel.onDidDispose(() => { disposed = true }))
         const rows: Row[] = []
         let editing: Row | undefined
         let busy = true
@@ -42,11 +57,24 @@ export function init(ctx: Vsc.ExtensionContext) {
         const savedPeriod = settings.projectionSeconds
         let period = typeof savedPeriod === 'number' && Number.isSafeInteger(savedPeriod) && savedPeriod > 0 ? savedPeriod : 10
         const nonce = require('crypto').randomBytes(16).toString('hex') as string
-        const render = (message: string) => { if (!disposed) panel.webview.html = html(root.fsPath, rows, message, nonce, editing, busy, period) }
+        const render = (message: string) => {
+            if (disposed) return
+            if (message && !busy) Vsc.window.setStatusBarMessage(`EM•Scope: ${message}`, 5000)
+            panel.webview.html = html(root.fsPath, rows, message, nonce, editing, busy, period)
+        }
+        rootListeners.push(panel.webview.onDidReceiveMessage(async msg => {
+            if (msg?.kind !== 'choose' || busy) return
+            const chosen = await Vsc.window.showOpenDialog({
+                title: 'Choose Captures', defaultUri: root,
+                canSelectFolders: true, canSelectFiles: false, canSelectMany: false,
+                openLabel: 'Choose Captures',
+            })
+            if (chosen?.[0]) await Vsc.commands.executeCommand('embuilder.showScope', chosen[0])
+        }))
         render('Discovering captures…')
         try {
             const paths = await discover(root.fsPath)
-            if (!paths.length) { render('No captures found.'); return }
+            if (!paths.length) { busy = false; render('No captures found.'); return }
             const localRequire = createRequire(Path.join(workspace.fsPath, 'package.json'))
             const scopePackage = localRequire.resolve('@em-foundation/emscope/package.json')
             const cli = Path.join(Path.dirname(scopePackage), 'dist', 'emscope')
@@ -62,7 +90,7 @@ export function init(ctx: Vsc.ExtensionContext) {
                 const ten = parseScore(await run(['view', '-c', row.dir, '-w', String(period), '--json']))
                 row.one = one; row.ten = ten; row.status = 'Ready'
             }
-            ctx.subscriptions.push(panel.webview.onDidReceiveMessage(async msg => {
+            rootListeners.push(panel.webview.onDidReceiveMessage(async msg => {
                 if (busy || disposed || !msg || typeof msg !== 'object') return
                 if (msg.kind === 'whatif') {
                     busy = true
@@ -77,14 +105,33 @@ export function init(ctx: Vsc.ExtensionContext) {
                         await ctx.workspaceState.update(settingsKey, { ...settings, projectionSeconds: nextPeriod })
                         settings.projectionSeconds = nextPeriod
                         period = nextPeriod
-                        for (const row of rows) row.ten = undefined
-                        render('Updating projected scores…')
-                        for (const row of rows) {
-                            if (!row.one || !row.count) continue
-                            try { row.ten = parseScore(await run(['view', '-c', row.dir, '-w', String(period), '--json'])) }
-                            catch (err) { output.appendLine(`${row.name}: ${message(err)}`) }
-                        }
-                    } finally { busy = false; render('Projection updated. Unavailable scores appear as —; see EM•Scope Output for details.') }
+                        const targets = rows.filter(row => row.one && row.count)
+                        for (const row of targets) { row.ten = undefined; row.status = 'Refreshing projection…' }
+                        render('')
+                        let failures = 0
+                        await Vsc.window.withProgress({ location: Vsc.ProgressLocation.Notification, title: 'EM•Scope' }, async report => {
+                            report.report({ message: `Refreshing… [0 of ${targets.length}]` })
+                            let done = 0
+                            for (const row of targets) {
+                                if (disposed) break
+                                try {
+                                    row.ten = parseScore(await run(['view', '-c', row.dir, '-w', String(period), '--json']))
+                                    row.status = 'Ready'
+                                } catch (err) {
+                                    failures++
+                                    row.status = `Error: ${message(err)}`
+                                    output.appendLine(`${row.name}: ${message(err)}`)
+                                }
+                                done++
+                                report.report({ increment: 100 / Math.max(1, targets.length), message: `Refreshing… [${done} of ${targets.length}]` })
+                                render('')
+                            }
+                        })
+                        if (!disposed) Vsc.window.setStatusBarMessage(failures ? `EM•Scope refreshed — ${failures} projection(s) failed; see Output.` : 'EM•Scope refreshed.', 5000)
+                    } catch (err) {
+                        output.appendLine(message(err))
+                        Vsc.window.setStatusBarMessage('EM•Scope refresh failed; see Output.', 5000)
+                    } finally { busy = false; render('') }
                     return
                 }
                 if (msg.kind === 'cancel') { editing = undefined; render(''); return }
@@ -134,6 +181,9 @@ export function init(ctx: Vsc.ExtensionContext) {
                     render(message(err))
                 } finally { busy = false; render(row.count === undefined ? row.status : `${row.name}: retained ${row.count} event(s).`) }
             }))
+            await Vsc.window.withProgress({ location: Vsc.ProgressLocation.Notification, title: 'EM•Scope' }, async report => {
+                report.report({ message: `Loading captures… [0 of ${paths.length}]` })
+                let loaded = 0
             for (const dir of paths) {
                 if (disposed) break
                 const row: Row = { dir, name: Path.relative(root.fsPath, dir).split(Path.sep).join('/') || '.', status: 'Loading…' }
@@ -146,7 +196,7 @@ export function init(ctx: Vsc.ExtensionContext) {
                         // for ordinary archives, without Git operations or overwriting local raw data.
                         const Zip = createRequire(scopePackage)('adm-zip')
                         const archive = Path.join(dir, 'emscope-capture.zip')
-                        output.appendLine(`Unpacking ordinary archive: ${archive}`)
+                        output.appendLine(`Unpacking ordinary archive: ${bashPath(archive)}`)
                         const zip = new Zip(archive)
                         for (const entry of zip.getEntries()) {
                             const name = entry.entryName.replaceAll('\\', '/')
@@ -158,9 +208,13 @@ export function init(ctx: Vsc.ExtensionContext) {
                     else await update(row)
                 } catch (err) { row.status = `Error: ${message(err)}`; output.appendLine(`${row.name}: ${row.status}`) }
                 render('')
+                loaded++
+                report.report({ increment: 100 / paths.length, message: `Loading captures… [${loaded} of ${paths.length}]` })
             }
+            })
+            if (!disposed) Vsc.window.setStatusBarMessage('EM•Scope loaded.', 5000)
             busy = false; render('')
-        } catch (err) { output.appendLine(message(err)); render(`Unable to load captures: ${message(err)}. See EM•Scope Output.`) }
+        } catch (err) { busy = false; output.appendLine(message(err)); render(`Unable to load captures: ${message(err)}. See EM•Scope Output.`) }
     }))
 }
 
@@ -174,9 +228,9 @@ async function discover(root: string): Promise<string[]> {
     return found
 }
 function command(cli: string, args: string[], cwd: string, output: Vsc.OutputChannel): Promise<string> {
-    output.appendLine(`\nWorking directory: ${cwd}`)
-    output.appendLine(`emscope ${args.map(a => JSON.stringify(a)).join(' ')}`)
-    output.appendLine(`Executable: ${process.execPath} ${cli}`)
+    output.appendLine(`\nWorking directory: ${bashPath(cwd)}`)
+    output.appendLine(`emscope ${args.map(a => JSON.stringify(Path.isAbsolute(a) ? bashPath(a) : a)).join(' ')}`)
+    output.appendLine(`Executable: ${bashPath(process.execPath)} ${bashPath(cli)}`)
     return new Promise((resolve, reject) => {
         const proc = spawn(process.execPath, [cli, ...args], { cwd, env: { ...process.env, ELECTRON_RUN_AS_NODE: '1' }, windowsHide: true })
         let stdout = ''
@@ -198,10 +252,11 @@ function parseScore(text: string): Score {
 function message(err: unknown) { return err instanceof Error ? err.message : String(err) }
 function escape(text: string) { return text.replace(/[&<>"']/g, ch => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[ch]!)) }
 function html(root: string, rows: Row[], status: string, nonce: string, editing?: Row, busy = false, period = 10) {
+    const periodLabel = [Math.floor(period / 3600), Math.floor(period / 60) % 60, period % 60].map(part => String(part).padStart(2, '0')).join(':')
     const number = (n?: number, scale = 1) => n === undefined ? '—' : (n * scale).toLocaleString(undefined, { maximumFractionDigits: 2 })
     return `<!doctype html><html><head><meta charset="utf-8"><meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; script-src 'nonce-${nonce}';"><meta name="viewport" content="width=device-width, initial-scale=1"><style>
     body { font-family: var(--vscode-font-family); color: var(--vscode-editor-foreground); background: var(--vscode-editor-background); padding: 20px; }
-    h1 { font-size: 22px; } .root, .note { color: var(--vscode-descriptionForeground); } .table { overflow-x: auto; } table { border-collapse: collapse; width: 100%; margin-top: 24px; } th, td { padding: 12px; border-bottom: 1px solid var(--vscode-panel-border); text-align: right; font-variant-numeric: tabular-nums; } th:first-child, td:first-child, th:nth-child(2), td:nth-child(2) { text-align: left; } th { white-space: nowrap; } th:first-child { width: 180px; } td { overflow-wrap: anywhere; }
+    h1 { font-size: 22px; } .root, .note { color: var(--vscode-descriptionForeground); } .table { overflow-x: auto; } table { border-collapse: collapse; width: 100%; margin-top: 24px; } th, td { padding: 12px; border-bottom: 1px solid var(--vscode-panel-border); text-align: right; font-variant-numeric: tabular-nums; } th:first-child, td:first-child, th:nth-child(2), td:nth-child(2) { text-align: left; } th { white-space: nowrap; } th:first-child { width: 34px; } td { overflow-wrap: anywhere; }
     button { color: var(--vscode-button-foreground); background: var(--vscode-button-background); border: 0; padding: 6px 12px; cursor: pointer; } td:last-child { white-space: nowrap; } button:disabled { opacity: .5; cursor: default; } dialog { color: var(--vscode-editor-foreground); background: var(--vscode-editor-background); border: 1px solid var(--vscode-panel-border); width: 440px; max-width: 85vw; max-height: 85vh; overflow-y: auto; } dialog::backdrop { background: #0008; } label { display: block; margin: 14px 0; } input { display: block; box-sizing: border-box; width: 100%; margin-top: 5px; padding: 6px; color: var(--vscode-input-foreground); background: var(--vscode-input-background); border: 1px solid var(--vscode-input-border, transparent); } small { color: var(--vscode-descriptionForeground); } .actions { display: flex; gap: 8px; justify-content: flex-end; }
 
     :root { --scope-accent: hsl(165, 80%, 45%); --scope-blue: #94b9dd; --scope-blue-fill: #4275a5; }
@@ -219,10 +274,14 @@ function html(root: string, rows: Row[], status: string, nonce: string, editing?
     td { padding: 17px 14px; font-size: 13px; }
     tbody tr:last-child td { border-bottom: 0; }
     tbody tr:hover { background: var(--vscode-list-hoverBackground); }
-    th:first-child, td:first-child { width: 180px; min-width: 180px; max-width: 180px; box-sizing: border-box; }
-    td:first-child { font-weight: 600; }
+    th:nth-child(2), td:nth-child(2) { width: 180px; min-width: 180px; max-width: 180px; box-sizing: border-box; }
+    td:nth-child(2) { font-weight: 600; }
     .capture-name { display: block; width: 152px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
     td:nth-child(6), td:nth-child(7) { color: var(--scope-accent); font-weight: 600; }
+    .root-picker { display: flex; gap: 16px; align-items: center; flex-wrap: wrap; margin: 18px 0 24px; }
+    .root-picker .root { margin: 0; }
+    #choose-captures { color: var(--scope-blue); background: transparent; border-color: rgba(148,185,221,.28); }
+    progress { display: block; width: 260px; max-width: 100%; height: 6px; accent-color: var(--scope-blue); margin: 10px 0; }
     .toolbar { position: relative; height: 34px; margin: -8px 0 12px; }
     .toolbar button { position: absolute; top: 0; right: 0; }
     #whatif { background: var(--scope-blue-fill); color: #f3f7fb; }
@@ -231,6 +290,10 @@ function html(root: string, rows: Row[], status: string, nonce: string, editing?
     th:nth-child(6), td:nth-child(6), th:nth-child(7), td:nth-child(7) { padding-right: 32px; }
 
 
+    th:first-child, td.status-cell { width: 34px; min-width: 34px; max-width: 34px; padding-left: 10px; padding-right: 0; text-align: center; }
+    .status-icon { display: inline-block; font-size: 17px; line-height: 1; white-space: nowrap; color: var(--scope-blue); }
+    .status-icon.error { color: var(--vscode-errorForeground); }
+    .status-icon.waiting { color: var(--vscode-descriptionForeground); }
     .badge { display: inline-block; padding: 3px 9px; border-radius: 12px; font-size: 11px; font-weight: 500; background: var(--vscode-badge-background); color: var(--vscode-badge-foreground); }
     .badge.ready { color: var(--scope-blue); background: rgba(148, 185, 221, .10); border: 1px solid rgba(148, 185, 221, .28); }
     button { font: inherit; font-size: 12px; border-radius: 5px; padding: 6px 11px; border: 1px solid transparent; }
@@ -249,14 +312,23 @@ function html(root: string, rows: Row[], status: string, nonce: string, editing?
     small { display: block; margin-top: 4px; font-size: 11px; font-weight: normal; }
     .actions { margin-top: 22px; padding-top: 16px; border-top: 1px solid var(--vscode-panel-border); }
     @media (max-width: 700px) { body { padding: 18px; } th, td { padding: 10px; } }
-    </style></head><body><header class="masthead"><svg class="scope-mark" aria-hidden="true" viewBox="0 0 32 28" width="38" height="34" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="28" height="20" rx="3"/><path d="M5 13h5l3-7 5 13 3-6h6M12 26h8M16 22v4"/></svg><div><h1>EM<span class="dot">•</span>Scope</h1><p class="subtitle">Capture · Analyze · Compare</p></div></header><p class="root">${escape(root)}</p><div class="toolbar"><button id="whatif" ${busy ? 'disabled' : ''}>What if...</button></div><div class="table"><table><thead><tr><th>Capture</th><th>Status</th><th>Events</th><th>Sleep µA</th><th>Event µJ</th><th><span class="score-heading">EM•eralds</span> [1s]</th><th id="projection-heading"><span class="score-heading">EM•eralds</span> [${period}s]</th><th></th></tr></thead><tbody>${rows.map(row => `<tr><td><span class="capture-name" title="${escape(row.name)}">${escape(row.name)}</span></td><td><span class="badge ${row.status === 'Ready' ? 'ready' : ''}">${escape(row.status)}</span></td><td>${number(row.count)}</td><td>${number(row.one?.sleepCurrent, 1e6)}</td><td>${number(row.one?.eventEnergy, 1e6)}</td><td>${number(row.one?.emeralds)}</td><td>${number(row.ten?.emeralds)}</td><td><button data-edit="${escape(row.name)}" ${busy ? 'disabled' : ''}>Scan…</button> <button data-waveform="${escape(row.name)}" ${busy || !row.one || !row.count ? 'disabled' : ''} title="Open waveform in Joulescope Viewer">View</button></td></tr>`).join('')}</tbody></table></div><p role="status">${escape(status)}</p><p class="note">Scores project the measured event and sleep energy at the indicated repetition period. Commands and diagnostics are available in Output → EM•Scope.</p>${editing ? `<dialog open><form id="scan-form"><h2>Scan ${escape(editing.name)}</h2><p>Blank fields omit that option. Raw recording is unchanged.</p>${fields.map(([key, label, help]) => {
+    </style></head><body><header class="masthead"><svg class="scope-mark" aria-hidden="true" viewBox="0 0 32 28" width="38" height="34" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="28" height="20" rx="3"/><path d="M5 13h5l3-7 5 13 3-6h6M12 26h8M16 22v4"/></svg><div><h1>EM<span class="dot">•</span>Scope</h1><p class="subtitle">Capture · Analyze · Compare</p></div></header><div class="root-picker"><p class="root">${escape(bashPath(root))}</p><button id="choose-captures" ${busy ? 'disabled' : ''}>Choose Captures...</button></div><div class="toolbar"><button id="whatif" ${busy ? 'disabled' : ''}>What if...</button></div><div class="table"><table><thead><tr><th aria-label="Status"></th><th>Capture</th><th>Events</th><th>Sleep µA</th><th>Event µJ</th><th><span class="score-heading">EM•eralds</span> [1s]</th><th id="projection-heading"><span class="score-heading">EM•eralds</span> [${periodLabel}]</th><th></th></tr></thead><tbody>${rows.map(row => `<tr><td class="status-cell">${statusIcon(row.status)}</td><td><span class="capture-name" title="${escape(row.name)}">${escape(row.name)}</span></td><td>${number(row.count)}</td><td>${number(row.one?.sleepCurrent, 1e6)}</td><td>${number(row.one?.eventEnergy, 1e6)}</td><td>${number(row.one?.emeralds)}</td><td>${number(row.ten?.emeralds)}</td><td><button data-edit="${escape(row.name)}" ${busy ? 'disabled' : ''}>Scan…</button> <button data-waveform="${escape(row.name)}" ${busy || !row.one || !row.count ? 'disabled' : ''} title="Open waveform in Joulescope Viewer">View</button></td></tr>`).join('')}</tbody></table></div><p class="note">Scores project the measured event and sleep energy at the indicated repetition period. Commands and diagnostics are available in Output → EM•Scope.</p>${editing ? `<dialog open><form id="scan-form"><h2>Scan ${escape(editing.name)}</h2><p>Blank fields omit that option. Raw recording is unchanged.</p>${fields.map(([key, label, help]) => {
         const saved = editing.options?.find(opt => opt.startsWith(`--${key} `))?.split(/\s+/)[1] ?? ''
         return `<label>${label}<input name="${key}" type="number" step="${key === 'trim' ? '1' : 'any'}" min="0" value="${escape(saved)}" placeholder="${key === 'sleep-window' ? '500 (default)' : 'Not set'}"><small>${help}</small></label>`
     }).join('')}<div class="actions"><button type="button" id="cancel">Cancel</button><button type="submit">Scan</button></div></form></dialog>` : ''}
     <script nonce="${nonce}">
     const vscode = acquireVsCodeApi();
+    const savedScroll = vscode.getState();
+    if (savedScroll) requestAnimationFrame(() => {
+        window.scrollTo(savedScroll.x || 0, savedScroll.y || 0);
+        document.querySelector('.table').scrollLeft = savedScroll.tableX || 0;
+    });
+    const rememberScroll = () => vscode.setState({x: window.scrollX, y: window.scrollY, tableX: document.querySelector('.table').scrollLeft});
+    window.addEventListener('scroll', rememberScroll, {passive:true});
+    document.querySelector('.table').addEventListener('scroll', rememberScroll, {passive:true});
     document.querySelectorAll('[data-edit]').forEach(button => button.addEventListener('click', () => vscode.postMessage({kind:'edit',name:button.dataset.edit})));
     document.querySelectorAll('[data-waveform]').forEach(button => button.addEventListener('click', () => vscode.postMessage({kind:'waveform',name:button.dataset.waveform})));
+    document.getElementById('choose-captures').addEventListener('click', () => vscode.postMessage({kind:'choose'}));
     const alignWhatIf = () => {
         const button = document.getElementById('whatif');
         const heading = document.getElementById('projection-heading');
@@ -286,4 +358,22 @@ function projectionSeconds(text: string): number | undefined {
     if (!/^\d+$/.test(value) && !/^[0-5]?\d:[0-5]\d$/.test(value) && !/^\d+:[0-5]\d:[0-5]\d$/.test(value)) return undefined
     const seconds = value.split(':').reduce((sum, part) => sum * 60 + Number(part), 0)
     return Number.isSafeInteger(seconds) && seconds > 0 ? seconds : undefined
+}
+
+function bashPath(path: string): string {
+    const normalized = path.replaceAll('\\', '/')
+    const home = homedir().replaceAll('\\', '/').replace(/\/$/, '')
+    const compare = (value: string) => process.platform === 'win32' ? value.toLowerCase() : value
+    if (compare(normalized) === compare(home)) return '~'
+    if (compare(normalized).startsWith(compare(home) + '/')) return '~' + normalized.slice(home.length)
+    return normalized.replace(/^([a-zA-Z]):\//, (_, drive: string) => `/${drive.toLowerCase()}/`)
+}
+
+function statusIcon(status: string): string {
+    const ready = status === 'Ready'
+    const error = status.startsWith('Error:') || status.startsWith('No events')
+    const pending = /Loading|Unpacking|Scanning|Refreshing/.test(status)
+    const icon = ready ? '✓' : error ? '✕' : pending ? '⌛' : '○'
+    const kind = error ? 'error' : ready || pending ? '' : 'waiting'
+    return `<span class="status-icon ${kind}" role="img" title="${escape(status)}" aria-label="${escape(status)}">${icon}</span>`
 }
