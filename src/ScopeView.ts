@@ -15,6 +15,8 @@ const fields = [
     ['event-window', 'Event window (ms)', 'Fixed scoring window from each event start.'],
     ['sleep-window', 'Sleep window (ms)', 'Quiet-baseline search window; default 500 ms.'],
 ] as const
+type ViewerSettings = { projectionSeconds?: number }
+
 const panels = new Map<string, Vsc.WebviewPanel>()
 
 export function init(ctx: Vsc.ExtensionContext) {
@@ -35,8 +37,12 @@ export function init(ctx: Vsc.ExtensionContext) {
         const rows: Row[] = []
         let editing: Row | undefined
         let busy = true
+        const settingsKey = `embuilder.scope.settings:${key}`
+        const settings = ctx.workspaceState.get<ViewerSettings>(settingsKey, {})
+        const savedPeriod = settings.projectionSeconds
+        let period = typeof savedPeriod === 'number' && Number.isSafeInteger(savedPeriod) && savedPeriod > 0 ? savedPeriod : 10
         const nonce = require('crypto').randomBytes(16).toString('hex') as string
-        const render = (message: string) => { if (!disposed) panel.webview.html = html(root.fsPath, rows, message, nonce, editing, busy) }
+        const render = (message: string) => { if (!disposed) panel.webview.html = html(root.fsPath, rows, message, nonce, editing, busy, period) }
         render('Discovering captures…')
         try {
             const paths = await discover(root.fsPath)
@@ -53,11 +59,34 @@ export function init(ctx: Vsc.ExtensionContext) {
                 if (!explicit && !row.options.length) { row.status = 'Captured — scan required'; row.count = undefined; return }
                 if (!row.count) { row.status = 'No events — adjust scan'; return }
                 const one = parseScore(await run(['view', '-c', row.dir, '-w', '00:00:01', '--json']))
-                const ten = parseScore(await run(['view', '-c', row.dir, '-w', '00:00:10', '--json']))
+                const ten = parseScore(await run(['view', '-c', row.dir, '-w', String(period), '--json']))
                 row.one = one; row.ten = ten; row.status = 'Ready'
             }
             ctx.subscriptions.push(panel.webview.onDidReceiveMessage(async msg => {
                 if (busy || disposed || !msg || typeof msg !== 'object') return
+                if (msg.kind === 'whatif') {
+                    busy = true
+                    try {
+                        const value = await Vsc.window.showInputBox({
+                            title: 'EM•Scope What-if', value: String(period),
+                            prompt: 'Projection period for all captures: seconds, MM:SS, or HH:MM:SS',
+                            validateInput: text => projectionSeconds(text) === undefined ? 'Enter a positive period, such as 10, 60, or 01:00:00.' : undefined,
+                        })
+                        if (value === undefined) return
+                        const nextPeriod = projectionSeconds(value)!
+                        await ctx.workspaceState.update(settingsKey, { ...settings, projectionSeconds: nextPeriod })
+                        settings.projectionSeconds = nextPeriod
+                        period = nextPeriod
+                        for (const row of rows) row.ten = undefined
+                        render('Updating projected scores…')
+                        for (const row of rows) {
+                            if (!row.one || !row.count) continue
+                            try { row.ten = parseScore(await run(['view', '-c', row.dir, '-w', String(period), '--json'])) }
+                            catch (err) { output.appendLine(`${row.name}: ${message(err)}`) }
+                        }
+                    } finally { busy = false; render('Projection updated. Unavailable scores appear as —; see EM•Scope Output for details.') }
+                    return
+                }
                 if (msg.kind === 'cancel') { editing = undefined; render(''); return }
                 const row = rows.find(r => r.name === msg.name)
                 if (!row) return
@@ -168,7 +197,7 @@ function parseScore(text: string): Score {
 }
 function message(err: unknown) { return err instanceof Error ? err.message : String(err) }
 function escape(text: string) { return text.replace(/[&<>"']/g, ch => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[ch]!)) }
-function html(root: string, rows: Row[], status: string, nonce: string, editing?: Row, busy = false) {
+function html(root: string, rows: Row[], status: string, nonce: string, editing?: Row, busy = false, period = 10) {
     const number = (n?: number, scale = 1) => n === undefined ? '—' : (n * scale).toLocaleString(undefined, { maximumFractionDigits: 2 })
     return `<!doctype html><html><head><meta charset="utf-8"><meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; script-src 'nonce-${nonce}';"><meta name="viewport" content="width=device-width, initial-scale=1"><style>
     body { font-family: var(--vscode-font-family); color: var(--vscode-editor-foreground); background: var(--vscode-editor-background); padding: 20px; }
@@ -194,6 +223,14 @@ function html(root: string, rows: Row[], status: string, nonce: string, editing?
     td:first-child { font-weight: 600; }
     .capture-name { display: block; width: 152px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
     td:nth-child(6), td:nth-child(7) { color: var(--scope-accent); font-weight: 600; }
+    .toolbar { position: relative; height: 34px; margin: -8px 0 12px; }
+    .toolbar button { position: absolute; top: 0; right: 0; }
+    #whatif { background: var(--scope-blue-fill); color: #f3f7fb; }
+    .score-heading { color: var(--scope-accent); }
+    th:nth-child(6), td:nth-child(6) { padding-left: 14px; }
+    th:nth-child(6), td:nth-child(6), th:nth-child(7), td:nth-child(7) { padding-right: 32px; }
+
+
     .badge { display: inline-block; padding: 3px 9px; border-radius: 12px; font-size: 11px; font-weight: 500; background: var(--vscode-badge-background); color: var(--vscode-badge-foreground); }
     .badge.ready { color: var(--scope-blue); background: rgba(148, 185, 221, .10); border: 1px solid rgba(148, 185, 221, .28); }
     button { font: inherit; font-size: 12px; border-radius: 5px; padding: 6px 11px; border: 1px solid transparent; }
@@ -212,7 +249,7 @@ function html(root: string, rows: Row[], status: string, nonce: string, editing?
     small { display: block; margin-top: 4px; font-size: 11px; font-weight: normal; }
     .actions { margin-top: 22px; padding-top: 16px; border-top: 1px solid var(--vscode-panel-border); }
     @media (max-width: 700px) { body { padding: 18px; } th, td { padding: 10px; } }
-    </style></head><body><header class="masthead"><svg class="scope-mark" aria-hidden="true" viewBox="0 0 32 28" width="38" height="34" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="28" height="20" rx="3"/><path d="M5 13h5l3-7 5 13 3-6h6M12 26h8M16 22v4"/></svg><div><h1>EM<span class="dot">•</span>Scope</h1><p class="subtitle">Capture · Analyze · Compare</p></div></header><p class="root">${escape(root)}</p><div class="table"><table><thead><tr><th>Capture</th><th>Status</th><th>Events</th><th>Sleep µA</th><th>Event µJ</th><th>EM•eralds · 1 s</th><th>EM•eralds · 10 s</th><th></th></tr></thead><tbody>${rows.map(row => `<tr><td><span class="capture-name" title="${escape(row.name)}">${escape(row.name)}</span></td><td><span class="badge ${row.status === 'Ready' ? 'ready' : ''}">${escape(row.status)}</span></td><td>${number(row.count)}</td><td>${number(row.one?.sleepCurrent, 1e6)}</td><td>${number(row.one?.eventEnergy, 1e6)}</td><td>${number(row.one?.emeralds)}</td><td>${number(row.ten?.emeralds)}</td><td><button data-edit="${escape(row.name)}" ${busy ? 'disabled' : ''}>Scan…</button> <button data-waveform="${escape(row.name)}" ${busy || !row.one || !row.count ? 'disabled' : ''} title="Open waveform in Joulescope Viewer">View</button></td></tr>`).join('')}</tbody></table></div><p role="status">${escape(status)}</p><p class="note">Scores project the measured event and sleep energy at the indicated repetition period. Commands and diagnostics are available in Output → EM•Scope.</p>${editing ? `<dialog open><form id="scan-form"><h2>Scan ${escape(editing.name)}</h2><p>Blank fields omit that option. Raw recording is unchanged.</p>${fields.map(([key, label, help]) => {
+    </style></head><body><header class="masthead"><svg class="scope-mark" aria-hidden="true" viewBox="0 0 32 28" width="38" height="34" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="28" height="20" rx="3"/><path d="M5 13h5l3-7 5 13 3-6h6M12 26h8M16 22v4"/></svg><div><h1>EM<span class="dot">•</span>Scope</h1><p class="subtitle">Capture · Analyze · Compare</p></div></header><p class="root">${escape(root)}</p><div class="toolbar"><button id="whatif" ${busy ? 'disabled' : ''}>What if...</button></div><div class="table"><table><thead><tr><th>Capture</th><th>Status</th><th>Events</th><th>Sleep µA</th><th>Event µJ</th><th><span class="score-heading">EM•eralds</span> [1s]</th><th id="projection-heading"><span class="score-heading">EM•eralds</span> [${period}s]</th><th></th></tr></thead><tbody>${rows.map(row => `<tr><td><span class="capture-name" title="${escape(row.name)}">${escape(row.name)}</span></td><td><span class="badge ${row.status === 'Ready' ? 'ready' : ''}">${escape(row.status)}</span></td><td>${number(row.count)}</td><td>${number(row.one?.sleepCurrent, 1e6)}</td><td>${number(row.one?.eventEnergy, 1e6)}</td><td>${number(row.one?.emeralds)}</td><td>${number(row.ten?.emeralds)}</td><td><button data-edit="${escape(row.name)}" ${busy ? 'disabled' : ''}>Scan…</button> <button data-waveform="${escape(row.name)}" ${busy || !row.one || !row.count ? 'disabled' : ''} title="Open waveform in Joulescope Viewer">View</button></td></tr>`).join('')}</tbody></table></div><p role="status">${escape(status)}</p><p class="note">Scores project the measured event and sleep energy at the indicated repetition period. Commands and diagnostics are available in Output → EM•Scope.</p>${editing ? `<dialog open><form id="scan-form"><h2>Scan ${escape(editing.name)}</h2><p>Blank fields omit that option. Raw recording is unchanged.</p>${fields.map(([key, label, help]) => {
         const saved = editing.options?.find(opt => opt.startsWith(`--${key} `))?.split(/\s+/)[1] ?? ''
         return `<label>${label}<input name="${key}" type="number" step="${key === 'trim' ? '1' : 'any'}" min="0" value="${escape(saved)}" placeholder="${key === 'sleep-window' ? '500 (default)' : 'Not set'}"><small>${help}</small></label>`
     }).join('')}<div class="actions"><button type="button" id="cancel">Cancel</button><button type="submit">Scan</button></div></form></dialog>` : ''}
@@ -220,6 +257,19 @@ function html(root: string, rows: Row[], status: string, nonce: string, editing?
     const vscode = acquireVsCodeApi();
     document.querySelectorAll('[data-edit]').forEach(button => button.addEventListener('click', () => vscode.postMessage({kind:'edit',name:button.dataset.edit})));
     document.querySelectorAll('[data-waveform]').forEach(button => button.addEventListener('click', () => vscode.postMessage({kind:'waveform',name:button.dataset.waveform})));
+    const alignWhatIf = () => {
+        const button = document.getElementById('whatif');
+        const heading = document.getElementById('projection-heading');
+        const toolbar = document.querySelector('.toolbar');
+        const padding = parseFloat(getComputedStyle(heading).paddingRight) || 0;
+        const left = heading.getBoundingClientRect().right - padding - toolbar.getBoundingClientRect().left - button.offsetWidth;
+        button.style.left = Math.max(0, Math.min(left, toolbar.clientWidth - button.offsetWidth)) + 'px';
+        button.style.right = 'auto';
+    };
+    new ResizeObserver(alignWhatIf).observe(document.querySelector('table'));
+    document.querySelector('.table').addEventListener('scroll', alignWhatIf);
+    alignWhatIf();
+    document.getElementById('whatif').addEventListener('click', () => vscode.postMessage({kind:'whatif'}));
     const form = document.getElementById('scan-form');
     if (form) {
         const dialog = document.querySelector('dialog'); dialog.close(); dialog.showModal();
@@ -229,4 +279,11 @@ function html(root: string, rows: Row[], status: string, nonce: string, editing?
         form.addEventListener('submit', event => { event.preventDefault(); if (!form.reportValidity()) return; const values = Object.fromEntries(new FormData(form)); form.querySelectorAll('button').forEach(b => b.disabled = true); vscode.postMessage({kind:'scan',name:${JSON.stringify(editing?.name ?? '').replaceAll('<', '\\u003c')},values}); });
     }
     </script></body></html>`
+}
+
+function projectionSeconds(text: string): number | undefined {
+    const value = text.trim()
+    if (!/^\d+$/.test(value) && !/^[0-5]?\d:[0-5]\d$/.test(value) && !/^\d+:[0-5]\d:[0-5]\d$/.test(value)) return undefined
+    const seconds = value.split(':').reduce((sum, part) => sum * 60 + Number(part), 0)
+    return Number.isSafeInteger(seconds) && seconds > 0 ? seconds : undefined
 }
