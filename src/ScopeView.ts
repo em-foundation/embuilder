@@ -172,9 +172,47 @@ function html(root: string, rows: Row[], status: string, nonce: string, editing?
     const number = (n?: number, scale = 1) => n === undefined ? '—' : (n * scale).toLocaleString(undefined, { maximumFractionDigits: 2 })
     return `<!doctype html><html><head><meta charset="utf-8"><meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; script-src 'nonce-${nonce}';"><meta name="viewport" content="width=device-width, initial-scale=1"><style>
     body { font-family: var(--vscode-font-family); color: var(--vscode-editor-foreground); background: var(--vscode-editor-background); padding: 20px; }
-    h1 { font-size: 22px; } .root, .note { color: var(--vscode-descriptionForeground); } .table { overflow-x: auto; } table { border-collapse: collapse; width: 100%; margin-top: 24px; } th, td { padding: 12px; border-bottom: 1px solid var(--vscode-panel-border); text-align: right; font-variant-numeric: tabular-nums; } th:first-child, td:first-child, th:nth-child(2), td:nth-child(2) { text-align: left; } th { white-space: normal; } th:first-child { width: 30%; } td { overflow-wrap: anywhere; }
+    h1 { font-size: 22px; } .root, .note { color: var(--vscode-descriptionForeground); } .table { overflow-x: auto; } table { border-collapse: collapse; width: 100%; margin-top: 24px; } th, td { padding: 12px; border-bottom: 1px solid var(--vscode-panel-border); text-align: right; font-variant-numeric: tabular-nums; } th:first-child, td:first-child, th:nth-child(2), td:nth-child(2) { text-align: left; } th { white-space: nowrap; } th:first-child { width: 180px; } td { overflow-wrap: anywhere; }
     button { color: var(--vscode-button-foreground); background: var(--vscode-button-background); border: 0; padding: 6px 12px; cursor: pointer; } td:last-child { white-space: nowrap; } button:disabled { opacity: .5; cursor: default; } dialog { color: var(--vscode-editor-foreground); background: var(--vscode-editor-background); border: 1px solid var(--vscode-panel-border); width: 440px; max-width: 85vw; max-height: 85vh; overflow-y: auto; } dialog::backdrop { background: #0008; } label { display: block; margin: 14px 0; } input { display: block; box-sizing: border-box; width: 100%; margin-top: 5px; padding: 6px; color: var(--vscode-input-foreground); background: var(--vscode-input-background); border: 1px solid var(--vscode-input-border, transparent); } small { color: var(--vscode-descriptionForeground); } .actions { display: flex; gap: 8px; justify-content: flex-end; }
-    </style></head><body><h1>EM•Scope</h1><p class="root">${escape(root)}</p><div class="table"><table><thead><tr><th>Capture</th><th>Status</th><th>Events</th><th>Sleep<br>µA</th><th>Event<br>µJ</th><th>EM•eralds<br>1 s</th><th>EM•eralds<br>10 s</th><th></th></tr></thead><tbody>${rows.map(row => `<tr><td>${escape(row.name)}</td><td>${escape(row.status)}</td><td>${number(row.count)}</td><td>${number(row.one?.sleepCurrent, 1e6)}</td><td>${number(row.one?.eventEnergy, 1e6)}</td><td>${number(row.one?.emeralds)}</td><td>${number(row.ten?.emeralds)}</td><td><button data-edit="${escape(row.name)}" ${busy ? 'disabled' : ''}>Scan…</button> <button data-waveform="${escape(row.name)}" ${busy || !row.one || !row.count ? 'disabled' : ''}>View Waveform</button></td></tr>`).join('')}</tbody></table></div><p role="status">${escape(status)}</p><p class="note">Scores project the measured event and sleep energy at the indicated repetition period. Commands and diagnostics are available in Output → EM•Scope.</p>${editing ? `<dialog open><form id="scan-form"><h2>Scan ${escape(editing.name)}</h2><p>Blank fields omit that option. Raw recording is unchanged.</p>${fields.map(([key, label, help]) => {
+
+    :root { --scope-accent: hsl(165, 80%, 45%); --scope-blue: #94b9dd; --scope-blue-fill: #4275a5; }
+    body { margin: 0; padding: 32px; line-height: 1.5; }
+    .masthead { display: flex; gap: 14px; align-items: center; margin-bottom: 6px; }
+    .scope-mark { color: var(--scope-accent); flex: 0 0 auto; }
+    h1 { font-size: 28px; font-weight: 600; letter-spacing: -.6px; margin: 0; }
+    .dot { color: var(--scope-accent); }
+    .subtitle { margin: 0; color: var(--vscode-descriptionForeground); font-size: 12px; }
+    .root { font-family: var(--vscode-editor-font-family); font-size: 12px; margin: 18px 0 24px; overflow-wrap: anywhere; }
+    .table { border: 1px solid var(--vscode-panel-border); border-radius: 8px; }
+    table { margin-top: 0; }
+    thead { background: var(--vscode-editor-inactiveSelectionBackground); }
+    th { padding: 13px 14px; font-size: 11px; letter-spacing: .3px; font-weight: 600; }
+    td { padding: 17px 14px; font-size: 13px; }
+    tbody tr:last-child td { border-bottom: 0; }
+    tbody tr:hover { background: var(--vscode-list-hoverBackground); }
+    th:first-child, td:first-child { width: 180px; min-width: 180px; max-width: 180px; box-sizing: border-box; }
+    td:first-child { font-weight: 600; }
+    .capture-name { display: block; width: 152px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    td:nth-child(6), td:nth-child(7) { color: var(--scope-accent); font-weight: 600; }
+    .badge { display: inline-block; padding: 3px 9px; border-radius: 12px; font-size: 11px; font-weight: 500; background: var(--vscode-badge-background); color: var(--vscode-badge-foreground); }
+    .badge.ready { color: var(--scope-blue); background: rgba(148, 185, 221, .10); border: 1px solid rgba(148, 185, 221, .28); }
+    button { font: inherit; font-size: 12px; border-radius: 5px; padding: 6px 11px; border: 1px solid transparent; }
+    button[data-edit], button[type=submit] { background: var(--scope-blue-fill); color: #f3f7fb; font-weight: 600; }
+    button[data-waveform], #cancel { color: var(--scope-blue); background: rgba(148, 185, 221, .05); border-color: rgba(148, 185, 221, .28); }
+    button:hover:not(:disabled) { filter: brightness(1.12); }
+    button:focus-visible, input:focus-visible { outline: 2px solid var(--vscode-focusBorder); outline-offset: 3px; }
+    .note { font-size: 11px; max-width: 760px; margin-top: 18px; }
+    p[role=status]:empty { display: none; }
+    p[role=status] { font-size: 12px; padding-left: 10px; border-left: 2px solid var(--scope-blue); }
+    dialog { border-radius: 10px; padding: 24px; box-shadow: 0 16px 60px #0005; border-top: 3px solid var(--scope-blue); }
+    dialog h2 { margin: 0 0 8px; font-size: 20px; font-weight: 600; }
+    dialog p { color: var(--vscode-descriptionForeground); font-size: 12px; }
+    label { font-size: 12px; font-weight: 600; }
+    input { border-radius: 4px; padding: 8px 10px; font: inherit; font-variant-numeric: tabular-nums; }
+    small { display: block; margin-top: 4px; font-size: 11px; font-weight: normal; }
+    .actions { margin-top: 22px; padding-top: 16px; border-top: 1px solid var(--vscode-panel-border); }
+    @media (max-width: 700px) { body { padding: 18px; } th, td { padding: 10px; } }
+    </style></head><body><header class="masthead"><svg class="scope-mark" aria-hidden="true" viewBox="0 0 32 28" width="38" height="34" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="28" height="20" rx="3"/><path d="M5 13h5l3-7 5 13 3-6h6M12 26h8M16 22v4"/></svg><div><h1>EM<span class="dot">•</span>Scope</h1><p class="subtitle">Capture · Analyze · Compare</p></div></header><p class="root">${escape(root)}</p><div class="table"><table><thead><tr><th>Capture</th><th>Status</th><th>Events</th><th>Sleep µA</th><th>Event µJ</th><th>EM•eralds · 1 s</th><th>EM•eralds · 10 s</th><th></th></tr></thead><tbody>${rows.map(row => `<tr><td><span class="capture-name" title="${escape(row.name)}">${escape(row.name)}</span></td><td><span class="badge ${row.status === 'Ready' ? 'ready' : ''}">${escape(row.status)}</span></td><td>${number(row.count)}</td><td>${number(row.one?.sleepCurrent, 1e6)}</td><td>${number(row.one?.eventEnergy, 1e6)}</td><td>${number(row.one?.emeralds)}</td><td>${number(row.ten?.emeralds)}</td><td><button data-edit="${escape(row.name)}" ${busy ? 'disabled' : ''}>Scan…</button> <button data-waveform="${escape(row.name)}" ${busy || !row.one || !row.count ? 'disabled' : ''} title="Open waveform in Joulescope Viewer">View</button></td></tr>`).join('')}</tbody></table></div><p role="status">${escape(status)}</p><p class="note">Scores project the measured event and sleep energy at the indicated repetition period. Commands and diagnostics are available in Output → EM•Scope.</p>${editing ? `<dialog open><form id="scan-form"><h2>Scan ${escape(editing.name)}</h2><p>Blank fields omit that option. Raw recording is unchanged.</p>${fields.map(([key, label, help]) => {
         const saved = editing.options?.find(opt => opt.startsWith(`--${key} `))?.split(/\s+/)[1] ?? ''
         return `<label>${label}<input name="${key}" type="number" step="${key === 'trim' ? '1' : 'any'}" min="0" value="${escape(saved)}" placeholder="${key === 'sleep-window' ? '500 (default)' : 'Not set'}"><small>${help}</small></label>`
     }).join('')}<div class="actions"><button type="button" id="cancel">Cancel</button><button type="submit">Scan</button></div></form></dialog>` : ''}
