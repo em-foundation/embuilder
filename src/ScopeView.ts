@@ -2,6 +2,7 @@ import * as Vsc from 'vscode'
 import * as Fs from 'fs/promises'
 import * as Path from 'path'
 import { homedir } from 'os'
+import { EM_COLOR } from './StatusItems'
 import { createRequire } from 'module'
 import { spawn } from 'child_process'
 import * as Yaml from 'js-yaml'
@@ -18,11 +19,17 @@ const fields = [
 ] as const
 type ViewerSettings = { projectionSeconds?: number }
 
+let scopeStatus: Vsc.StatusBarItem
 let currentPanel: Vsc.WebviewPanel | undefined
 let currentRoot: string | undefined
 let rootListeners: Vsc.Disposable[] = []
 
 export function init(ctx: Vsc.ExtensionContext) {
+    scopeStatus = Vsc.window.createStatusBarItem(Vsc.StatusBarAlignment.Left, 9)
+    scopeStatus.name = 'EM•Scope status'
+    scopeStatus.color = EM_COLOR
+    scopeStatus.command = 'embuilder.showScope'
+    ctx.subscriptions.push(scopeStatus)
     const output = Vsc.window.createOutputChannel('EM•Scope')
     ctx.subscriptions.push(output, Vsc.commands.registerCommand('embuilder.showScope', async (uri?: Vsc.Uri) => {
         const workspace = Vsc.workspace.workspaceFolders?.[0]?.uri
@@ -40,12 +47,16 @@ export function init(ctx: Vsc.ExtensionContext) {
             ctx.subscriptions.push(currentPanel)
             currentPanel.onDidDispose(() => {
                 currentPanel = undefined; currentRoot = undefined
+                scopeStatus.hide()
                 for (const listener of rootListeners) listener.dispose()
                 rootListeners = []
             })
         }
         const panel = currentPanel
         currentRoot = key
+        scopeStatus.text = '$(sync~spin) EM•Scope: Loading…'
+        scopeStatus.tooltip = bashPath(root.fsPath)
+        scopeStatus.show()
         panel.reveal()
         let disposed = false
         rootListeners.push(panel.onDidDispose(() => { disposed = true }))
@@ -59,6 +70,12 @@ export function init(ctx: Vsc.ExtensionContext) {
         const nonce = require('crypto').randomBytes(16).toString('hex') as string
         const render = (message: string) => {
             if (disposed) return
+            if (!busy) {
+                const attention = rows.some(row => row.status !== 'Ready')
+                scopeStatus.text = attention ? '$(info) EM•Scope: Needs attention' : '$(pulse) EM•Scope: Ready'
+            } else if (/^Scanning|^Opening waveform/.test(message)) {
+                scopeStatus.text = `$(sync~spin) EM•Scope: ${message}`
+            }
             if (message && !busy) Vsc.window.setStatusBarMessage(`EM•Scope: ${message}`, 5000)
             panel.webview.html = html(root.fsPath, rows, message, nonce, editing, busy, period)
         }
@@ -109,7 +126,7 @@ export function init(ctx: Vsc.ExtensionContext) {
                         for (const row of targets) { row.ten = undefined; row.status = 'Refreshing projection…' }
                         render('')
                         let failures = 0
-                        await Vsc.window.withProgress({ location: Vsc.ProgressLocation.Notification, title: 'EM•Scope' }, async report => {
+                        await withStatusProgress(async report => {
                             report.report({ message: `Refreshing… [0 of ${targets.length}]` })
                             let done = 0
                             for (const row of targets) {
@@ -127,10 +144,13 @@ export function init(ctx: Vsc.ExtensionContext) {
                                 render('')
                             }
                         })
-                        if (!disposed) Vsc.window.setStatusBarMessage(failures ? `EM•Scope refreshed — ${failures} projection(s) failed; see Output.` : 'EM•Scope refreshed.', 5000)
+                        if (!disposed) {
+                            if (failures) Vsc.window.showWarningMessage(`EM•Scope refreshed — ${failures} projection(s) failed. See EM•Scope Output.`)
+                            else Vsc.window.showInformationMessage(`EM•Scope ready — ${targets.length} captures refreshed.`)
+                        }
                     } catch (err) {
                         output.appendLine(message(err))
-                        Vsc.window.setStatusBarMessage('EM•Scope refresh failed; see Output.', 5000)
+                        Vsc.window.showErrorMessage('EM•Scope refresh failed. See EM•Scope Output.')
                     } finally { busy = false; render('') }
                     return
                 }
@@ -181,7 +201,7 @@ export function init(ctx: Vsc.ExtensionContext) {
                     render(message(err))
                 } finally { busy = false; render(row.count === undefined ? row.status : `${row.name}: retained ${row.count} event(s).`) }
             }))
-            await Vsc.window.withProgress({ location: Vsc.ProgressLocation.Notification, title: 'EM•Scope' }, async report => {
+            await withStatusProgress(async report => {
                 report.report({ message: `Loading captures… [0 of ${paths.length}]` })
                 let loaded = 0
             for (const dir of paths) {
@@ -212,7 +232,11 @@ export function init(ctx: Vsc.ExtensionContext) {
                 report.report({ increment: 100 / paths.length, message: `Loading captures… [${loaded} of ${paths.length}]` })
             }
             })
-            if (!disposed) Vsc.window.setStatusBarMessage('EM•Scope loaded.', 5000)
+            if (!disposed) {
+                const failures = rows.filter(row => row.status.startsWith('Error:')).length
+                if (failures) Vsc.window.showWarningMessage(`EM•Scope loaded — ${failures} captures failed. See EM•Scope Output.`)
+                else Vsc.window.showInformationMessage(`EM•Scope ready — ${rows.length} captures loaded.`)
+            }
             busy = false; render('')
         } catch (err) { busy = false; output.appendLine(message(err)); render(`Unable to load captures: ${message(err)}. See EM•Scope Output.`) }
     }))
@@ -376,4 +400,14 @@ function statusIcon(status: string): string {
     const icon = ready ? '✓' : error ? '✕' : pending ? '⌛' : '○'
     const kind = error ? 'error' : ready || pending ? '' : 'waiting'
     return `<span class="status-icon ${kind}" role="img" title="${escape(status)}" aria-label="${escape(status)}">${icon}</span>`
+}
+
+async function withStatusProgress(task: (progress: Vsc.Progress<{ message?: string, increment?: number }>) => Promise<void>): Promise<void> {
+    try {
+        await task({ report: update => {
+            if (currentPanel) scopeStatus.text = `$(sync~spin) EM•Scope: ${update.message ?? ''}`
+        } })
+    } finally {
+        if (currentPanel) scopeStatus.text = '$(pulse) EM•Scope: Ready'
+    }
 }
