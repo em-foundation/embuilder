@@ -17,7 +17,9 @@ const fields = [
     ['event-window', 'Event window (ms)', 'Fixed scoring window from each event start.'],
     ['sleep-window', 'Sleep window (ms)', 'Quiet-baseline search window; default 500 ms.'],
 ] as const
-type ViewerSettings = { projectionSeconds?: number }
+const sortKeys = ['name', 'events', 'sleep', 'energy', 'score', 'projection'] as const
+type SortKey = typeof sortKeys[number]
+type ViewerSettings = { projectionSeconds?: number, sortKey?: SortKey, sortDescending?: boolean }
 
 let scopeStatus: Vsc.StatusBarItem
 let currentPanel: Vsc.WebviewPanel | undefined
@@ -31,7 +33,7 @@ export function init(ctx: Vsc.ExtensionContext) {
     scopeStatus.command = 'embuilder.showScope'
     ctx.subscriptions.push(scopeStatus)
     const output = Vsc.window.createOutputChannel('EM•Scope')
-    ctx.subscriptions.push(output, Vsc.commands.registerCommand('embuilder.showScope', async (uri?: Vsc.Uri) => {
+    ctx.subscriptions.push(output, Vsc.commands.registerCommand('embuilder.showScope', async (uri?: Vsc.Uri, refresh = false) => {
         const workspace = Vsc.workspace.workspaceFolders?.[0]?.uri
         if (!workspace) { Vsc.window.showErrorMessage('Open an Emporium workspace first.'); return }
         const savedRoot = ctx.workspaceState.get<string>('embuilder.scope.lastRoot')
@@ -39,7 +41,7 @@ export function init(ctx: Vsc.ExtensionContext) {
         if (root.scheme !== 'file') { Vsc.window.showErrorMessage('EM•Scope requires a local capture folder.'); return }
         const key = root.toString()
         await ctx.workspaceState.update('embuilder.scope.lastRoot', root.fsPath)
-        if (currentPanel && (!uri || currentRoot === key)) { currentPanel.reveal(); return }
+        if (!refresh && currentPanel && (!uri || currentRoot === key)) { currentPanel.reveal(); return }
         for (const listener of rootListeners) listener.dispose()
         rootListeners = []
         if (!currentPanel) {
@@ -63,8 +65,14 @@ export function init(ctx: Vsc.ExtensionContext) {
         const rows: Row[] = []
         let editing: Row | undefined
         let busy = true
-        const settingsKey = `embuilder.scope.settings:${key}`
-        const settings = ctx.workspaceState.get<ViewerSettings>(settingsKey, {})
+        const settingsKey = 'embuilder.scope.viewerSettings'
+        const priorKey = savedRoot ? Vsc.Uri.file(savedRoot).toString() : key
+        const settings = ctx.workspaceState.get<ViewerSettings>(settingsKey)
+            ?? ctx.workspaceState.get<ViewerSettings>(`embuilder.scope.settings:${priorKey}`)
+            ?? ctx.workspaceState.get<ViewerSettings>(`embuilder.scope.settings:${key}`, {})
+        await ctx.workspaceState.update(settingsKey, settings)
+        let sortKey: SortKey = sortKeys.includes(settings.sortKey as SortKey) ? settings.sortKey! : 'name'
+        let sortDescending = settings.sortDescending === true
         const savedPeriod = settings.projectionSeconds
         let period = typeof savedPeriod === 'number' && Number.isSafeInteger(savedPeriod) && savedPeriod > 0 ? savedPeriod : 10
         const nonce = require('crypto').randomBytes(16).toString('hex') as string
@@ -77,10 +85,16 @@ export function init(ctx: Vsc.ExtensionContext) {
                 scopeStatus.text = `$(sync~spin) EM•Scope: ${message}`
             }
             if (message && !busy) Vsc.window.setStatusBarMessage(`EM•Scope: ${message}`, 5000)
-            panel.webview.html = html(root.fsPath, rows, message, nonce, editing, busy, period)
+            panel.webview.html = html(root.fsPath, sortedRows(rows, sortKey, sortDescending), message, nonce, editing, busy, period, sortKey, sortDescending)
         }
         rootListeners.push(panel.webview.onDidReceiveMessage(async msg => {
-            if (msg?.kind !== 'choose' || busy) return
+            if (busy) return
+            if (msg?.kind === 'refresh') {
+                busy = true
+                await Vsc.commands.executeCommand('embuilder.showScope', root, true)
+                return
+            }
+            if (msg?.kind !== 'choose') return
             const chosen = await Vsc.window.showOpenDialog({
                 title: 'Choose Captures', defaultUri: root,
                 canSelectFolders: true, canSelectFiles: false, canSelectMany: false,
@@ -152,6 +166,16 @@ export function init(ctx: Vsc.ExtensionContext) {
                         output.appendLine(message(err))
                         Vsc.window.showErrorMessage('EM•Scope refresh failed. See EM•Scope Output.')
                     } finally { busy = false; render('') }
+                    return
+                }
+                if (msg.kind === 'sort') {
+                    if (!sortKeys.includes(msg.key)) return
+                    const nextKey = msg.key as SortKey
+                    sortDescending = nextKey === sortKey ? !sortDescending : nextKey === 'score' || nextKey === 'projection'
+                    sortKey = nextKey
+                    settings.sortKey = sortKey; settings.sortDescending = sortDescending
+                    await ctx.workspaceState.update(settingsKey, settings)
+                    render('')
                     return
                 }
                 if (msg.kind === 'cancel') { editing = undefined; render(''); return }
@@ -275,9 +299,10 @@ function parseScore(text: string): Score {
 }
 function message(err: unknown) { return err instanceof Error ? err.message : String(err) }
 function escape(text: string) { return text.replace(/[&<>"']/g, ch => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[ch]!)) }
-function html(root: string, rows: Row[], status: string, nonce: string, editing?: Row, busy = false, period = 10) {
+function html(root: string, rows: Row[], status: string, nonce: string, editing?: Row, busy = false, period = 10, sortKey: SortKey = 'name', sortDescending = false) {
     const periodLabel = [Math.floor(period / 3600), Math.floor(period / 60) % 60, period % 60].map(part => String(part).padStart(2, '0')).join(':')
-    const number = (n?: number, scale = 1) => n === undefined ? '—' : (n * scale).toLocaleString(undefined, { maximumFractionDigits: 2 })
+    const heading = (key: SortKey, label: string, id = '') => `<th ${id ? `id="${id}"` : ''} aria-sort="${sortKey === key ? sortDescending ? 'descending' : 'ascending' : 'none'}"><button class="sort-button ${sortKey === key ? 'active' : ''}" data-sort="${key}" ${busy ? 'disabled' : ''}>${label}<span class="sort-arrow">${sortKey === key ? sortDescending ? '▼' : '▲' : ''}</span></button></th>`
+    const number = (n?: number, scale = 1) => n === undefined ? '—' : (n * scale).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })
     return `<!doctype html><html><head><meta charset="utf-8"><meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; script-src 'nonce-${nonce}';"><meta name="viewport" content="width=device-width, initial-scale=1"><style>
     body { font-family: var(--vscode-font-family); color: var(--vscode-editor-foreground); background: var(--vscode-editor-background); padding: 20px; }
     h1 { font-size: 22px; } .root, .note { color: var(--vscode-descriptionForeground); } .table { overflow-x: auto; } table { border-collapse: collapse; width: 100%; margin-top: 24px; } th, td { padding: 12px; border-bottom: 1px solid var(--vscode-panel-border); text-align: right; font-variant-numeric: tabular-nums; } th:first-child, td:first-child, th:nth-child(2), td:nth-child(2) { text-align: left; } th { white-space: nowrap; } th:first-child { width: 34px; } td { overflow-wrap: anywhere; }
@@ -304,11 +329,14 @@ function html(root: string, rows: Row[], status: string, nonce: string, editing?
     td:nth-child(6), td:nth-child(7) { color: var(--scope-accent); font-weight: 600; }
     .root-picker { display: flex; gap: 16px; align-items: center; flex-wrap: wrap; margin: 18px 0 24px; }
     .root-picker .root { margin: 0; }
-    #choose-captures { color: var(--scope-blue); background: transparent; border-color: rgba(148,185,221,.28); }
+    #choose-captures, #refresh-captures { color: var(--scope-blue); background: transparent; border-color: rgba(148,185,221,.28); }
     progress { display: block; width: 260px; max-width: 100%; height: 6px; accent-color: var(--scope-blue); margin: 10px 0; }
     .toolbar { position: relative; height: 34px; margin: -8px 0 12px; }
     .toolbar button { position: absolute; top: 0; right: 0; }
     #whatif { background: var(--scope-blue-fill); color: #f3f7fb; }
+    .sort-button { background: transparent; color: inherit; padding: 0; border: 0; font: inherit; white-space: nowrap; }
+    .sort-button.active { color: var(--scope-blue); }
+    .sort-arrow { display: inline-block; width: 12px; margin-left: 4px; font-size: 9px; color: var(--scope-blue); }
     .score-heading { color: var(--scope-accent); }
     th:nth-child(6), td:nth-child(6) { padding-left: 14px; }
     th:nth-child(6), td:nth-child(6), th:nth-child(7), td:nth-child(7) { padding-right: 32px; }
@@ -336,12 +364,13 @@ function html(root: string, rows: Row[], status: string, nonce: string, editing?
     small { display: block; margin-top: 4px; font-size: 11px; font-weight: normal; }
     .actions { margin-top: 22px; padding-top: 16px; border-top: 1px solid var(--vscode-panel-border); }
     @media (max-width: 700px) { body { padding: 18px; } th, td { padding: 10px; } }
-    </style></head><body><header class="masthead"><svg class="scope-mark" aria-hidden="true" viewBox="0 0 32 28" width="38" height="34" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="28" height="20" rx="3"/><path d="M5 13h5l3-7 5 13 3-6h6M12 26h8M16 22v4"/></svg><div><h1>EM<span class="dot">•</span>Scope</h1><p class="subtitle">Capture · Analyze · Compare</p></div></header><div class="root-picker"><p class="root">${escape(bashPath(root))}</p><button id="choose-captures" ${busy ? 'disabled' : ''}>Choose Captures...</button></div><div class="toolbar"><button id="whatif" ${busy ? 'disabled' : ''}>What if...</button></div><div class="table"><table><thead><tr><th aria-label="Status"></th><th>Capture</th><th>Events</th><th>Sleep µA</th><th>Event µJ</th><th><span class="score-heading">EM•eralds</span> [1s]</th><th id="projection-heading"><span class="score-heading">EM•eralds</span> [${periodLabel}]</th><th></th></tr></thead><tbody>${rows.map(row => `<tr><td class="status-cell">${statusIcon(row.status)}</td><td><span class="capture-name" title="${escape(row.name)}">${escape(row.name)}</span></td><td>${number(row.count)}</td><td>${number(row.one?.sleepCurrent, 1e6)}</td><td>${number(row.one?.eventEnergy, 1e6)}</td><td>${number(row.one?.emeralds)}</td><td>${number(row.ten?.emeralds)}</td><td><button data-edit="${escape(row.name)}" ${busy ? 'disabled' : ''}>Scan…</button> <button data-waveform="${escape(row.name)}" ${busy || !row.one || !row.count ? 'disabled' : ''} title="Open waveform in Joulescope Viewer">View</button></td></tr>`).join('')}</tbody></table></div><p class="note">Scores project the measured event and sleep energy at the indicated repetition period. Commands and diagnostics are available in Output → EM•Scope.</p>${editing ? `<dialog open><form id="scan-form"><h2>Scan ${escape(editing.name)}</h2><p>Blank fields omit that option. Raw recording is unchanged.</p>${fields.map(([key, label, help]) => {
+    </style></head><body><header class="masthead"><svg class="scope-mark" aria-hidden="true" viewBox="0 0 32 28" width="38" height="34" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="28" height="20" rx="3"/><path d="M5 13h5l3-7 5 13 3-6h6M12 26h8M16 22v4"/></svg><div><h1>EM<span class="dot">•</span>Scope</h1><p class="subtitle">Capture · Analyze · Compare</p></div></header><div class="root-picker"><p class="root">${escape(bashPath(root))}</p><button id="choose-captures" ${busy ? 'disabled' : ''}>Choose Captures...</button><button id="refresh-captures" ${busy ? 'disabled' : ''} title="Rediscover captures and reload results">Refresh</button></div><div class="toolbar"><button id="whatif" ${busy ? 'disabled' : ''}>What if...</button></div><div class="table"><table><thead><tr><th aria-label="Status"></th>${heading('name', 'Capture')}${heading('events', 'Events')}${heading('sleep', 'Sleep µA')}${heading('energy', 'Event µJ')}${heading('score', '<span class="score-heading">EM•eralds</span> [1s]')}${heading('projection', `<span class="score-heading">EM•eralds</span> [${periodLabel}]`, 'projection-heading')}<th></th></tr></thead><tbody>${rows.map(row => `<tr><td class="status-cell">${statusIcon(row.status)}</td><td><span class="capture-name" title="${escape(row.name)}">${escape(row.name)}</span></td><td>${row.count === undefined ? '—' : row.count.toLocaleString()}</td><td>${number(row.one?.sleepCurrent, 1e6)}</td><td>${number(row.one?.eventEnergy, 1e6)}</td><td>${number(row.one?.emeralds)}</td><td>${number(row.ten?.emeralds)}</td><td><button data-edit="${escape(row.name)}" ${busy ? 'disabled' : ''}>Scan…</button> <button data-waveform="${escape(row.name)}" ${busy || !row.one || !row.count ? 'disabled' : ''} title="Open waveform in Joulescope Viewer">View</button></td></tr>`).join('')}</tbody></table></div><p class="note">Scores project the measured event and sleep energy at the indicated repetition period. Commands and diagnostics are available in Output → EM•Scope.</p>${editing ? `<dialog open><form id="scan-form"><h2>Scan ${escape(editing.name)}</h2><p>Blank fields omit that option. Raw recording is unchanged.</p>${fields.map(([key, label, help]) => {
         const saved = editing.options?.find(opt => opt.startsWith(`--${key} `))?.split(/\s+/)[1] ?? ''
         return `<label>${label}<input name="${key}" type="number" step="${key === 'trim' ? '1' : 'any'}" min="0" value="${escape(saved)}" placeholder="${key === 'sleep-window' ? '500 (default)' : 'Not set'}"><small>${help}</small></label>`
     }).join('')}<div class="actions"><button type="button" id="cancel">Cancel</button><button type="submit">Scan</button></div></form></dialog>` : ''}
     <script nonce="${nonce}">
     const vscode = acquireVsCodeApi();
+    document.querySelectorAll('[data-sort]').forEach(button => button.addEventListener('click', () => vscode.postMessage({kind:'sort',key:button.dataset.sort})));
     const savedScroll = vscode.getState();
     if (savedScroll) requestAnimationFrame(() => {
         window.scrollTo(savedScroll.x || 0, savedScroll.y || 0);
@@ -353,6 +382,7 @@ function html(root: string, rows: Row[], status: string, nonce: string, editing?
     document.querySelectorAll('[data-edit]').forEach(button => button.addEventListener('click', () => vscode.postMessage({kind:'edit',name:button.dataset.edit})));
     document.querySelectorAll('[data-waveform]').forEach(button => button.addEventListener('click', () => vscode.postMessage({kind:'waveform',name:button.dataset.waveform})));
     document.getElementById('choose-captures').addEventListener('click', () => vscode.postMessage({kind:'choose'}));
+    document.getElementById('refresh-captures').addEventListener('click', () => vscode.postMessage({kind:'refresh'}));
     const alignWhatIf = () => {
         const button = document.getElementById('whatif');
         const heading = document.getElementById('projection-heading');
@@ -410,4 +440,24 @@ async function withStatusProgress(task: (progress: Vsc.Progress<{ message?: stri
     } finally {
         if (currentPanel) scopeStatus.text = '$(pulse) EM•Scope: Ready'
     }
+}
+
+function sortedRows(rows: Row[], key: SortKey, descending: boolean): Row[] {
+    const value = (row: Row): number | undefined => {
+        switch (key) {
+            case 'events': return row.count
+            case 'sleep': return row.one?.sleepCurrent
+            case 'energy': return row.one?.eventEnergy
+            case 'score': return row.one?.emeralds
+            case 'projection': return row.ten?.emeralds
+            default: return undefined
+        }
+    }
+    const byName = (a: Row, b: Row) => a.name.localeCompare(b.name, undefined, { sensitivity: 'base' }) || a.name.localeCompare(b.name)
+    return [...rows].sort((a, b) => {
+        if (key === 'name') return byName(a, b) * (descending ? -1 : 1)
+        const av = value(a), bv = value(b)
+        if (av === undefined || bv === undefined) return av === bv ? byName(a, b) : av === undefined ? 1 : -1
+        return (av - bv) * (descending ? -1 : 1) || byName(a, b)
+    })
 }
