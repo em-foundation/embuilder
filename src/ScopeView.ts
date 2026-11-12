@@ -123,18 +123,24 @@ export function init(ctx: Vsc.ExtensionContext) {
             }
             rootListeners.push(panel.webview.onDidReceiveMessage(async msg => {
                 if (busy || disposed || !msg || typeof msg !== 'object') return
-                if (msg.kind === 'whatif') {
+                if (msg.kind === 'whatif' || msg.kind === 'reset-view') {
+                    const reset = msg.kind === 'reset-view'
                     busy = true
                     try {
-                        const value = await Vsc.window.showInputBox({
-                            title: 'EM•Scope What-if', value: String(period),
-                            prompt: 'Projection period for all captures: seconds, MM:SS, or HH:MM:SS',
-                            validateInput: text => projectionSeconds(text) === undefined ? 'Enter a positive period, such as 10, 60, or 01:00:00.' : undefined,
+                        const value = reset ? '10' : await Vsc.window.showInputBox({
+                            title: 'EM•Scope What-if', value: formatPeriod(period),
+                            prompt: 'Scoring interval (e.g. 20, 01:30, or 01:00:00)',
+                            validateInput: text => projectionSeconds(text) === undefined ? 'Enter a positive period, such as 20, 01:30, or 01:00:00.' : undefined,
                         })
                         if (value === undefined) return
                         const nextPeriod = projectionSeconds(value)!
-                        await ctx.workspaceState.update(settingsKey, { ...settings, projectionSeconds: nextPeriod })
-                        settings.projectionSeconds = nextPeriod
+                        const nextSettings: ViewerSettings = reset
+                            ? { projectionSeconds: 10, sortKey: 'name', sortDescending: false }
+                            : { ...settings, projectionSeconds: nextPeriod }
+                        await ctx.workspaceState.update(settingsKey, nextSettings)
+                        Object.assign(settings, nextSettings)
+                        if (reset) { sortKey = 'name'; sortDescending = false }
+                        if (period === nextPeriod) return
                         period = nextPeriod
                         const targets = rows.filter(row => row.one && row.count)
                         for (const row of targets) { row.ten = undefined; row.status = 'Refreshing projection…' }
@@ -300,7 +306,7 @@ function parseScore(text: string): Score {
 function message(err: unknown) { return err instanceof Error ? err.message : String(err) }
 function escape(text: string) { return text.replace(/[&<>"']/g, ch => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[ch]!)) }
 function html(root: string, rows: Row[], status: string, nonce: string, editing?: Row, busy = false, period = 10, sortKey: SortKey = 'name', sortDescending = false) {
-    const periodLabel = [Math.floor(period / 3600), Math.floor(period / 60) % 60, period % 60].map(part => String(part).padStart(2, '0')).join(':')
+    const periodLabel = formatPeriod(period)
     const heading = (key: SortKey, label: string, id = '') => `<th ${id ? `id="${id}"` : ''} aria-sort="${sortKey === key ? sortDescending ? 'descending' : 'ascending' : 'none'}"><button class="sort-button ${sortKey === key ? 'active' : ''}" data-sort="${key}" ${busy ? 'disabled' : ''}>${label}<span class="sort-arrow">${sortKey === key ? sortDescending ? '▼' : '▲' : ''}</span></button></th>`
     const number = (n?: number, scale = 1) => n === undefined ? '—' : (n * scale).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })
     return `<!doctype html><html><head><meta charset="utf-8"><meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; script-src 'nonce-${nonce}';"><meta name="viewport" content="width=device-width, initial-scale=1"><style>
@@ -329,11 +335,14 @@ function html(root: string, rows: Row[], status: string, nonce: string, editing?
     td:nth-child(6), td:nth-child(7) { color: var(--scope-accent); font-weight: 600; }
     .root-picker { display: flex; gap: 16px; align-items: center; flex-wrap: wrap; margin: 18px 0 24px; }
     .root-picker .root { margin: 0; }
-    #choose-captures, #refresh-captures { color: var(--scope-blue); background: transparent; border-color: rgba(148,185,221,.28); }
+    .capture-controls { display: inline-flex; align-items: center; gap: 5px; }
+    .root-action { display: inline-grid; place-items: center; width: 30px; height: 30px; padding: 0; color: var(--scope-blue); background: transparent; border-color: rgba(148,185,221,.28); }
+    .root-action[aria-disabled=true] { cursor: default; }
+    #grab-capture { margin-left: 7px; background: var(--scope-blue-fill); color: #f3f7fb; }
     progress { display: block; width: 260px; max-width: 100%; height: 6px; accent-color: var(--scope-blue); margin: 10px 0; }
     .toolbar { position: relative; height: 34px; margin: -8px 0 12px; }
     .toolbar button { position: absolute; top: 0; right: 0; }
-    #whatif { background: var(--scope-blue-fill); color: #f3f7fb; }
+    #whatif { display: inline-grid; place-items: center; width: 30px; height: 30px; padding: 0; background: var(--scope-blue-fill); color: #f3f7fb; }
     .sort-button { background: transparent; color: inherit; padding: 0; border: 0; font: inherit; white-space: nowrap; }
     .sort-button.active { color: var(--scope-blue); }
     .sort-arrow { display: inline-block; width: 12px; margin-left: 4px; font-size: 9px; color: var(--scope-blue); }
@@ -366,7 +375,7 @@ function html(root: string, rows: Row[], status: string, nonce: string, editing?
     small { display: block; margin-top: 4px; font-size: 11px; font-weight: normal; }
     .actions { margin-top: 22px; padding-top: 16px; border-top: 1px solid var(--vscode-panel-border); }
     @media (max-width: 700px) { body { padding: 18px; } th, td { padding: 10px; } }
-    </style></head><body><header class="masthead"><svg class="scope-mark" aria-hidden="true" viewBox="0 0 32 28" width="38" height="34" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="28" height="20" rx="3"/><path d="M5 13h5l3-7 5 13 3-6h6M12 26h8M16 22v4"/></svg><div><h1>EM<span class="dot">•</span>Scope</h1><p class="subtitle">Capture · Analyze · Compare</p></div></header><div class="root-picker"><p class="root">${escape(bashPath(root))}</p><button id="choose-captures" ${busy ? 'disabled' : ''}>Choose Captures...</button><button id="refresh-captures" ${busy ? 'disabled' : ''} title="Rediscover captures and reload results">Refresh</button></div><div class="toolbar"><button id="whatif" ${busy ? 'disabled' : ''}>What if...</button></div><div class="table"><table><thead><tr><th aria-label="Status"></th>${heading('name', 'Capture')}${heading('events', 'Events')}${heading('sleep', 'Sleep µA')}${heading('energy', 'Event µJ')}${heading('score', '<span class="score-heading">EM•eralds</span> [1s]')}${heading('projection', `<span class="score-heading">EM•eralds</span> [${periodLabel}]`, 'projection-heading')}<th></th></tr></thead><tbody>${rows.map(row => `<tr><td class="status-cell">${statusIcon(row.status)}</td><td><span class="capture-name" title="${escape(row.name)}">${escape(row.name)}</span></td><td>${row.count === undefined ? '—' : row.count.toLocaleString()}</td><td>${number(row.one?.sleepCurrent, 1e6)}</td><td>${number(row.one?.eventEnergy, 1e6)}</td><td>${number(row.one?.emeralds)}</td><td>${number(row.ten?.emeralds)}</td><td><button data-edit="${escape(row.name)}" ${busy ? 'disabled' : ''} title="Adjust scan parameters and detect events" aria-label="Adjust scan parameters and detect events"><svg aria-hidden="true" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><path d="M4 6h16M4 12h16M4 18h16"/><path d="M8 3v6M16 9v6M10 15v6"/></svg></button> <button data-waveform="${escape(row.name)}" ${busy || !row.one || !row.count ? 'disabled' : ''} title="Explore the marked waveform in Joulescope Viewer" aria-label="Explore the marked waveform in Joulescope Viewer"><svg aria-hidden="true" viewBox="0 0 32 28" width="20" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="28" height="20" rx="3"/><path d="M5 13h5l3-7 5 13 3-6h6M12 26h8M16 22v4"/></svg></button></td></tr>`).join('')}</tbody></table></div><p class="note">Scores project the measured event and sleep energy at the indicated repetition period. Commands and diagnostics are available in Output → EM•Scope.</p>${editing ? `<dialog open><form id="scan-form"><h2>Scan ${escape(editing.name)}</h2><p>Blank fields omit that option. Raw recording is unchanged.</p>${fields.map(([key, label, help]) => {
+    </style></head><body><header class="masthead"><svg class="scope-mark" aria-hidden="true" viewBox="0 0 32 28" width="38" height="34" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="28" height="20" rx="3"/><path d="M5 13h5l3-7 5 13 3-6h6M12 26h8M16 22v4"/></svg><div><h1>EM<span class="dot">•</span>Scope</h1><p class="subtitle">Capture · Analyze · Compare</p></div></header><div class="root-picker"><p class="root">${escape(bashPath(root))}</p><div class="capture-controls"><button id="choose-captures" class="root-action" title="Choose capture folder" aria-label="Choose capture folder" ${busy ? 'disabled' : ''}><svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3 19V5h6l2 3h10v11z"/></svg></button><button id="refresh-captures" class="root-action" title="Rediscover captures and reload results" aria-label="Rediscover captures and reload results" ${busy ? 'disabled' : ''}><svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M20 7v5h-5M4 17v-5h5M5 10a7 7 0 0 1 12-4l3 6M4 12l3 6a7 7 0 0 0 12-4"/></svg></button><button id="reset-view" class="root-action" title="Reset table sort and What-if period" aria-label="Reset table sort and What-if period" ${busy ? 'disabled' : ''}><svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 11a8 8 0 1 1 2.3 6M4 5v6h6"/></svg></button><button id="capture-settings" class="root-action" title="Capture settings (preview)" aria-label="Capture settings (preview)" aria-disabled="true"><svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"><path d="M10 2h4l.6 3 2 .9 2.6-1.6 2.8 2.8-1.6 2.6.9 2 3 .6v4l-3 .6-.9 2 1.6 2.6-2.8 2.8-2.6-1.6-2 .9-.6 3h-4l-.6-3-2-.9-2.6 1.6L2 21.5l1.6-2.6-.9-2-3-.6v-4l3-.6.9-2L2 7.1l2.8-2.8 2.6 1.6 2-.9z" transform="translate(1 -1) scale(.92 .88)"/><circle cx="12" cy="11.6" r="3"/></svg></button><button id="grab-capture" class="root-action" title="Grab a new capture (preview)" aria-label="Grab a new capture (preview)" aria-disabled="true"><svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg></button></div></div><div class="toolbar"><button id="whatif" ${busy ? 'disabled' : ''} title="What if… Change the projected scoring interval" aria-label="What if… Change the projected scoring interval"><svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><circle cx="12" cy="14" r="7"/><path d="M10 3h4m-2 0v4m5 1 2-2m-7 4v4"/></svg></button></div><div class="table"><table><thead><tr><th aria-label="Status"></th>${heading('name', 'Capture')}${heading('events', 'Events')}${heading('sleep', 'Sleep µA')}${heading('energy', 'Event µJ')}${heading('score', '<span class="score-heading">EM•eralds</span> [1s]')}${heading('projection', `<span class="score-heading">EM•eralds</span> [${periodLabel}]`, 'projection-heading')}<th></th></tr></thead><tbody>${rows.map(row => `<tr><td class="status-cell">${statusIcon(row.status)}</td><td><span class="capture-name" title="${escape(row.name)}">${escape(row.name)}</span></td><td>${row.count === undefined ? '—' : row.count.toLocaleString()}</td><td>${number(row.one?.sleepCurrent, 1e6)}</td><td>${number(row.one?.eventEnergy, 1e6)}</td><td>${number(row.one?.emeralds)}</td><td>${number(row.ten?.emeralds)}</td><td><button data-edit="${escape(row.name)}" ${busy ? 'disabled' : ''} title="Adjust scan parameters and detect events" aria-label="Adjust scan parameters and detect events"><svg aria-hidden="true" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><path d="M4 6h16M4 12h16M4 18h16"/><path d="M8 3v6M16 9v6M10 15v6"/></svg></button> <button data-waveform="${escape(row.name)}" ${busy || !row.one || !row.count ? 'disabled' : ''} title="Explore the marked waveform in Joulescope Viewer" aria-label="Explore the marked waveform in Joulescope Viewer"><svg aria-hidden="true" viewBox="0 0 32 28" width="20" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="28" height="20" rx="3"/><path d="M5 13h5l3-7 5 13 3-6h6M12 26h8M16 22v4"/></svg></button></td></tr>`).join('')}</tbody></table></div><p class="note">Scores project the measured event and sleep energy at the indicated repetition period. Commands and diagnostics are available in Output → EM•Scope.</p>${editing ? `<dialog open><form id="scan-form"><h2>Scan ${escape(editing.name)}</h2><p>Blank fields omit that option. Raw recording is unchanged.</p>${fields.map(([key, label, help]) => {
         const saved = editing.options?.find(opt => opt.startsWith(`--${key} `))?.split(/\s+/)[1] ?? ''
         return `<label>${label}<input name="${key}" type="number" step="${key === 'trim' ? '1' : 'any'}" min="0" value="${escape(saved)}" placeholder="${key === 'sleep-window' ? '500 (default)' : 'Not set'}"><small>${help}</small></label>`
     }).join('')}<div class="actions"><button type="button" id="cancel">Cancel</button><button type="submit">Scan</button></div></form></dialog>` : ''}
@@ -385,6 +394,7 @@ function html(root: string, rows: Row[], status: string, nonce: string, editing?
     document.querySelectorAll('[data-waveform]').forEach(button => button.addEventListener('click', () => vscode.postMessage({kind:'waveform',name:button.dataset.waveform})));
     document.getElementById('choose-captures').addEventListener('click', () => vscode.postMessage({kind:'choose'}));
     document.getElementById('refresh-captures').addEventListener('click', () => vscode.postMessage({kind:'refresh'}));
+    document.getElementById('reset-view').addEventListener('click', () => vscode.postMessage({kind:'reset-view'}));
     const alignWhatIf = () => {
         const button = document.getElementById('whatif');
         const heading = document.getElementById('projection-heading');
@@ -462,4 +472,8 @@ function sortedRows(rows: Row[], key: SortKey, descending: boolean): Row[] {
         if (av === undefined || bv === undefined) return av === bv ? byName(a, b) : av === undefined ? 1 : -1
         return (av - bv) * (descending ? -1 : 1) || byName(a, b)
     })
+}
+
+function formatPeriod(period: number): string {
+    return [Math.floor(period / 3600), Math.floor(period / 60) % 60, period % 60].map(part => String(part).padStart(2, '0')).join(':')
 }
