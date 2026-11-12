@@ -8,7 +8,7 @@ import { spawn } from 'child_process'
 import * as Yaml from 'js-yaml'
 
 type Score = { type: string, sleepCurrent: number, eventEnergy: number, emeralds: number }
-type Row = { name: string, dir: string, status: string, count?: number, options?: string[], one?: Score, ten?: Score }
+type Row = { name: string, dir: string, status: string, newCapture?: boolean, candidate?: string, overrides?: ScanValues, count?: number, options?: string[], one?: Score, ten?: Score }
 const fields = [
     ['gap', 'Merge gaps (ms)', 'Combine nearby activity regions.'],
     ['min-duration', 'Minimum duration (ms)', 'Reject shorter activity regions.'],
@@ -19,6 +19,9 @@ const fields = [
 ] as const
 const sortKeys = ['name', 'events', 'sleep', 'energy', 'score', 'projection'] as const
 type SortKey = typeof sortKeys[number]
+type ScanField = typeof fields[number][0]
+type ScanValues = Partial<Record<ScanField, number | null>>
+
 type ViewerSettings = { projectionSeconds?: number, sortKey?: SortKey, sortDescending?: boolean }
 
 let scopeStatus: Vsc.StatusBarItem
@@ -76,6 +79,27 @@ export function init(ctx: Vsc.ExtensionContext) {
         const savedPeriod = settings.projectionSeconds
         let period = typeof savedPeriod === 'number' && Number.isSafeInteger(savedPeriod) && savedPeriod > 0 ? savedPeriod : 10
         const nonce = require('crypto').randomBytes(16).toString('hex') as string
+        const scanDefaultsKey = `embuilder.scope.scanDefaults:${key}`
+        const savedDefaults = ctx.workspaceState.get<ScanValues | number>(scanDefaultsKey, 20)
+        let scanDefaults: ScanValues = typeof savedDefaults === 'number' ? { 'event-window': savedDefaults } : savedDefaults
+        let editingDefaults = false
+        const overridesKey = (dir: string) => `embuilder.scope.scanOverrides:${Vsc.Uri.file(dir).toString()}`
+        const readOverrides = (row: Row, dir: string): ScanValues => {
+            const saved = ctx.workspaceState.get<ScanValues>(overridesKey(dir))
+            if (saved) return saved
+            const values: ScanValues = {}
+            for (const [field] of fields) {
+                const option = row.options?.find(value => value.startsWith(`--${field} `))
+                if (!option) continue
+                const number = Number(option.split(/\s+/)[1])
+                if (Number.isFinite(number)) values[field] = number
+                else if (field === 'trim' && row.count) values[field] = row.count
+            }
+            const inherited = ctx.workspaceState.get<boolean>(`embuilder.scope.inheritWindow:${Vsc.Uri.file(dir).toString()}`)
+            if (inherited) delete values['event-window']
+            else if (inherited === false && values['event-window'] === undefined) values['event-window'] = null
+            return values
+        }
         const render = (message: string) => {
             if (disposed) return
             if (!busy) {
@@ -85,7 +109,7 @@ export function init(ctx: Vsc.ExtensionContext) {
                 scopeStatus.text = `$(sync~spin) EM•Scope: ${message}`
             }
             if (message && !busy) Vsc.window.setStatusBarMessage(`EM•Scope: ${message}`, 5000)
-            panel.webview.html = html(root.fsPath, sortedRows(rows, sortKey, sortDescending), message, nonce, editing, busy, period, sortKey, sortDescending)
+            panel.webview.html = html(root.fsPath, sortedRows(rows, sortKey, sortDescending), message, nonce, editing, busy, period, sortKey, sortDescending, scanDefaults, editingDefaults)
         }
         rootListeners.push(panel.webview.onDidReceiveMessage(async msg => {
             if (busy) return
@@ -105,24 +129,118 @@ export function init(ctx: Vsc.ExtensionContext) {
         render('Discovering captures…')
         try {
             const paths = await discover(root.fsPath)
-            if (!paths.length) { busy = false; render('No captures found.'); return }
             const localRequire = createRequire(Path.join(workspace.fsPath, 'package.json'))
             const scopePackage = localRequire.resolve('@em-foundation/emscope/package.json')
             const cli = Path.join(Path.dirname(scopePackage), 'dist', 'emscope')
             const run = (args: string[]) => command(cli, args, workspace.fsPath, output)
-            const update = async (row: Row, explicit = false) => {
-                row.one = undefined; row.ten = undefined
-                const analysis = Yaml.load(await Fs.readFile(Path.join(row.dir, 'analysis.yaml'), 'utf8')) as { options?: string[], events?: unknown[] }
+            const readAnalysis = async (row: Row, dir = row.dir) => {
+                const analysis = Yaml.load(await Fs.readFile(Path.join(dir, 'analysis.yaml'), 'utf8')) as { options?: string[], events?: unknown[], event_width?: number }
                 row.options = analysis.options ?? []
                 row.count = analysis.events?.length ?? 0
-                if (!explicit && !row.options.length) { row.status = 'Captured — scan required'; row.count = undefined; return }
-                if (!row.count) { row.status = 'No events — adjust scan'; return }
-                const one = parseScore(await run(['view', '-c', row.dir, '-w', '00:00:01', '--json']))
-                const ten = parseScore(await run(['view', '-c', row.dir, '-w', String(period), '--json']))
+                return analysis
+            }
+            const preview = async (row: Row) => {
+                const analysis = await readAnalysis(row, row.candidate)
+                row.one = undefined; row.ten = undefined
+                if (row.count && analysis.event_width !== undefined) {
+                    try {
+                        await update(row, row.candidate)
+                        row.status = 'Provisional — review the preview scores, then click Keep.'
+                        return
+                    } catch (err) {
+                        output.appendLine(`${row.name}: ${message(err)}`)
+                        row.status = `Provisional — ${message(err)}`
+                        return
+                    }
+                }
+                row.status = row.count
+                    ? 'Provisional — set Event window in Scan to preview scores.'
+                    : 'Provisional — no events found. Adjust the scan.'
+            }
+            const update = async (row: Row, dir = row.dir) => {
+                const analysis = await readAnalysis(row, dir)
+                if (!row.count) throw new Error('No events found. Adjust the scan before keeping it.')
+                if (analysis.event_width === undefined) throw new Error('Set Event window (ms) before keeping the scan.')
+                const one = parseScore(await run(['view', '-c', dir, '-w', '1', '--json']))
+                const ten = parseScore(await run(['view', '-c', dir, '-w', String(period), '--json']))
                 row.one = one; row.ten = ten; row.status = 'Ready'
             }
             rootListeners.push(panel.webview.onDidReceiveMessage(async msg => {
                 if (busy || disposed || !msg || typeof msg !== 'object') return
+                if (msg.kind === 'capture-settings') { editingDefaults = true; render(''); return }
+                if (msg.kind === 'save-defaults' && editingDefaults) {
+                    try {
+                        const values = readScanForm(msg.values, false)
+                        await ctx.workspaceState.update(scanDefaultsKey, values)
+                        scanDefaults = values
+                    } catch (err) {
+                        Vsc.window.showWarningMessage(message(err))
+                        return
+                    }
+                    editingDefaults = false
+                    render('')
+                    return
+                }
+                if (msg.kind === 'grab') {
+                    busy = true
+                    let row: Row | undefined
+                    try {
+                        const name = await Vsc.window.showInputBox({
+                            title: 'EM•Scope Grab',
+                            prompt: 'Capture name · PPK2 source mode · 3.0 V · 6 s',
+                            placeHolder: 'e.g. TI/CC27XX/baseline',
+                            validateInput: name => validateCaptureName(root.fsPath, name),
+                        })
+                        if (name === undefined || disposed) return
+                        const problem = await validateCaptureName(root.fsPath, name)
+                        if (problem) throw new Error(problem)
+                        const dir = await createCaptureFolder(root.fsPath, name)
+                        const previous = rows.findIndex(item => item.name === name)
+                        if (previous !== -1) rows.splice(previous, 1)
+                        row = { name, dir, status: 'Grabbing…', newCapture: true }
+                        rows.unshift(row)
+                        render('')
+                        scopeStatus.text = '$(sync~spin) EM•Scope: Grabbing…'
+                        let progressTail = ''
+                        let lastTenth = -1
+                        await command(cli, ['grab', '-P', '-S', '-v', '3.0', '-d', '6'], dir, output, chunk => {
+                            const text = progressTail + chunk
+                            const samples = [...text.matchAll(/capturing: (\d+\.\d+) s/g)]
+                            progressTail = text.slice(-40)
+                            const latest = samples.at(-1)
+                            if (!latest || disposed) return
+                            const tenth = Math.min(60, Math.floor(Number(latest[1]) * 10))
+                            if (tenth <= lastTenth) return
+                            lastTenth = tenth
+                            scopeStatus.text = `$(sync~spin) EM•Scope: Capturing [${(tenth / 10).toFixed(1)} of 6 s]`
+                        })
+                        if (!await exists(Path.join(dir, 'capture.yaml'))) throw new Error('Grab exited without saving a capture.')
+                        await Fs.writeFile(Path.join(dir, '.emscope-pending'), '')
+                        scopeStatus.text = '$(sync~spin) EM•Scope: Scanning…'
+                        await ctx.workspaceState.update(overridesKey(dir), {})
+                        try { await command(cli, ['scan', ...scanArguments(scanDefaults)], dir, output) }
+                        catch (err) { output.appendLine(`${name}: Default scan failed: ${message(err)}`) }
+                        await preview(row)
+                        scopeStatus.text = '$(sync~spin) EM•Scope: Packing…' 
+                        try { await command(cli, ['pack', '-z'], dir, output) }
+                        catch (err) {
+                            output.appendLine(`${name}: ${message(err)}`)
+                            Vsc.window.showWarningMessage(`EM•Scope captured ${name}, but packing failed. See EM•Scope Output.`)
+                            return
+                        }
+                        Vsc.window.showInformationMessage(`EM•Scope captured ${name}. Review the detected events.`)
+                    } catch (err) {
+                        const reason = grabError(message(err))
+                        if (row) {
+                            row.status = `Error: Grab failed — ${reason}`
+                            // Remove only an empty failed destination, so the name can be retried.
+                            await Fs.rmdir(row.dir).catch(() => {})
+                        }
+                        output.appendLine(reason)
+                        Vsc.window.showErrorMessage(`EM•Scope Grab: ${reason}`)
+                    } finally { busy = false; render('') }
+                    return
+                }
                 if (msg.kind === 'whatif' || msg.kind === 'reset-view') {
                     const reset = msg.kind === 'reset-view'
                     busy = true
@@ -153,7 +271,7 @@ export function init(ctx: Vsc.ExtensionContext) {
                                 if (disposed) break
                                 try {
                                     row.ten = parseScore(await run(['view', '-c', row.dir, '-w', String(period), '--json']))
-                                    row.status = 'Ready'
+                                    row.status = row.newCapture || row.candidate ? 'Provisional — review the preview scores, then click Keep.' : 'Ready'
                                 } catch (err) {
                                     failures++
                                     row.status = `Error: ${message(err)}`
@@ -184,16 +302,58 @@ export function init(ctx: Vsc.ExtensionContext) {
                     render('')
                     return
                 }
-                if (msg.kind === 'cancel') { editing = undefined; render(''); return }
+                if (msg.kind === 'cancel') { editing = undefined; editingDefaults = false; render(''); return }
                 const row = rows.find(r => r.name === msg.name)
                 if (!row) return
+                if (msg.kind === 'keep' || msg.kind === 'discard') {
+                    if (!row.newCapture && !row.candidate) return
+                    busy = true
+                    try {
+                        if (msg.kind === 'discard') {
+                            if (row.candidate) {
+                                await Fs.rm(row.candidate, { recursive: true })
+                                row.candidate = undefined
+                                await update(row)
+                            } else {
+                                const answer = await Vsc.window.showWarningMessage(
+                                    `Discard capture ${row.name} and its files?`, { modal: true }, 'Discard Capture',
+                                )
+                                if (answer !== 'Discard Capture') return
+                                const relative = Path.relative(root.fsPath, row.dir)
+                                if (!relative || relative.startsWith('..') || Path.isAbsolute(relative)) throw new Error('Cannot discard the capture root.')
+                                const entry = await capturePathEntry(row.dir)
+                                if (entry && (!entry.isDirectory() || entry.isSymbolicLink())) throw new Error('Capture is not an ordinary folder.')
+                                if (entry) await Vsc.workspace.fs.delete(Vsc.Uri.file(row.dir), { recursive: true, useTrash: true })
+                                rows.splice(rows.indexOf(row), 1)
+                            }
+                        } else {
+                            scopeStatus.text = '$(sync~spin) EM•Scope: Scoring…'
+                            await update(row, row.candidate)
+                            if (row.candidate) {
+                                await Fs.rename(Path.join(row.candidate, 'analysis.yaml'), Path.join(row.dir, 'analysis.yaml'))
+                                const candidate = row.candidate
+                                await ctx.workspaceState.update(overridesKey(row.dir), readOverrides(row, candidate))
+                                row.candidate = undefined
+                                await Fs.rm(candidate, { recursive: true }).catch(err => output.appendLine(message(err)))
+                            }
+                            if (row.newCapture) await Fs.rm(Path.join(row.dir, '.emscope-pending'), { force: true })
+                            row.newCapture = false
+                        }
+                    } catch (err) {
+                        row.one = undefined; row.ten = undefined
+                        row.status = `Provisional — ${message(err)}`
+                        output.appendLine(message(err))
+                        Vsc.window.showWarningMessage(message(err))
+                    } finally { busy = false; render('') }
+                    return
+                }
                 if (msg.kind === 'waveform') {
-                    if (!row.one || !row.count) return
+                    if (!row.count) return
                     busy = true
                     render(`Opening waveform for ${row.name}…`)
                     let result = ''
                     try {
-                        await run(['view', '-c', row.dir, '-j'])
+                        await run(['view', '-c', row.candidate ?? row.dir, '-j'])
                         result = `Opened ${row.name} in Joulescope Viewer.`
                     } catch (err) {
                         result = `Waveform: ${message(err)}`
@@ -203,32 +363,48 @@ export function init(ctx: Vsc.ExtensionContext) {
                 }
                 if (msg.kind === 'edit') {
                     try {
-                        const a = Yaml.load(await Fs.readFile(Path.join(row.dir, 'analysis.yaml'), 'utf8')) as { options?: string[] }
+                        const a = Yaml.load(await Fs.readFile(Path.join(row.candidate ?? row.dir, 'analysis.yaml'), 'utf8')) as { options?: string[] }
                         row.options = a?.options ?? []
                     } catch { row.options = [] }
+                    row.overrides = readOverrides(row, row.candidate ?? row.dir)
                     editing = row; render(''); return
                 }
                 if (msg.kind !== 'scan' || editing !== row) return
                 try {
-                    const args = ['scan', '-c', row.dir]
-                    for (const [key] of fields) {
-                        const text = msg.values?.[key]
-                        if (typeof text !== 'string') throw new Error('Invalid scan settings')
-                        if (!text.trim()) continue
-                        const value = Number(text)
-                        if (!Number.isFinite(value) || value < 0 || (['event-window', 'sleep-window', 'trim'].includes(key) && value <= 0) || (key === 'trim' && !Number.isInteger(value))) throw new Error(`Invalid ${key} value`)
-                        args.push(`--${key}`, String(value))
-                    }
+                    const overrides = readScanForm(msg.values, true)
+                    const args = ['scan', ...scanArguments({ ...scanDefaults, ...overrides })]
                     busy = true; editing = undefined; row.status = 'Scanning…'
                     row.one = undefined; row.ten = undefined; row.count = undefined
                     render(`Scanning ${row.name}…`)
-                    await run(args)
-                    await update(row, true)
+                    if (!row.newCapture && !row.candidate) {
+                        const candidate = await Fs.mkdtemp(Path.join(row.dir, '.emscope-review-'))
+                        try {
+                            await Fs.copyFile(Path.join(row.dir, 'capture.yaml'), Path.join(candidate, 'capture.yaml'))
+                            await Fs.copyFile(Path.join(row.dir, 'analysis.yaml'), Path.join(candidate, 'analysis.yaml'))
+                            await Fs.cp(Path.join(row.dir, '.emscope'), Path.join(candidate, '.emscope'), { recursive: true })
+                            await Fs.writeFile(Path.join(candidate, '.emscope-draft'), '')
+                            row.candidate = candidate
+                        } catch (err) {
+                            await Fs.rm(candidate, { recursive: true, force: true })
+                            throw err
+                        }
+                    }
+                    const scanDir = row.candidate ?? row.dir
+                    await run([...args, '-c', scanDir])
+                    await ctx.workspaceState.update(overridesKey(scanDir), overrides)
+                    row.overrides = overrides
+                    await preview(row)
                     render(`${row.name}: retained ${row.count} event(s).`)
                 } catch (err) {
-                    row.status = `Error: ${message(err)}`
+                    const reason = message(err)
+                    row.status = `Error: ${reason}`
                     output.appendLine(`${row.name}: ${row.status}`)
-                    render(message(err))
+                    if (row.count && reason.includes('--event-window')) {
+                        const hint = `Scan found ${row.count} events. Set Event window (ms) to calculate scores. View the waveform to check the markers first.`
+                        row.status = `Error: ${hint}`
+                        Vsc.window.showWarningMessage(hint)
+                    }
+                    render(reason)
                 } finally { busy = false; render(row.count === undefined ? row.status : `${row.name}: retained ${row.count} event(s).`) }
             }))
             await withStatusProgress(async report => {
@@ -255,7 +431,28 @@ export function init(ctx: Vsc.ExtensionContext) {
                         zip.extractAllTo(dir, false)
                     }
                     if (!await exists(Path.join(dir, 'analysis.yaml'))) row.status = 'Captured — scan required'
-                    else await update(row)
+                    else {
+                        const analysis = await readAnalysis(row)
+                        row.newCapture = await exists(Path.join(dir, '.emscope-pending')) || !analysis.options?.length
+                        const drafts = (await Fs.readdir(dir, { withFileTypes: true }))
+                            .filter(entry => entry.isDirectory() && entry.name.startsWith('.emscope-review-'))
+                        for (const draft of drafts) {
+                            const candidate = Path.join(dir, draft.name)
+                            if (await exists(Path.join(candidate, '.emscope-draft')) && await exists(Path.join(candidate, 'analysis.yaml'))) {
+                                row.candidate = candidate
+                                break
+                            }
+                        }
+                        if (refresh) {
+                            const scanDir = row.candidate ?? dir
+                            await readAnalysis(row, scanDir)
+                            const overrides = readOverrides(row, scanDir)
+                            await run(['scan', '-c', scanDir, ...scanArguments({ ...scanDefaults, ...overrides })])
+                            await ctx.workspaceState.update(overridesKey(scanDir), overrides)
+                        }
+                        if (row.newCapture || row.candidate) await preview(row)
+                        else await update(row)
+                    }
                 } catch (err) { row.status = `Error: ${message(err)}`; output.appendLine(`${row.name}: ${row.status}`) }
                 render('')
                 loaded++
@@ -281,20 +478,22 @@ async function discover(root: string): Promise<string[]> {
     }
     return found
 }
-function command(cli: string, args: string[], cwd: string, output: Vsc.OutputChannel): Promise<string> {
+function command(cli: string, args: string[], cwd: string, output: Vsc.OutputChannel, onStdout?: (chunk: string) => void): Promise<string> {
     output.appendLine(`\nWorking directory: ${bashPath(cwd)}`)
     output.appendLine(`emscope ${args.map(a => JSON.stringify(Path.isAbsolute(a) ? bashPath(a) : a)).join(' ')}`)
     output.appendLine(`Executable: ${bashPath(process.execPath)} ${bashPath(cli)}`)
     return new Promise((resolve, reject) => {
         const proc = spawn(process.execPath, [cli, ...args], { cwd, env: { ...process.env, ELECTRON_RUN_AS_NODE: '1' }, windowsHide: true })
         let stdout = ''
+        let stderr = ''
         proc.stdout.setEncoding('utf8'); proc.stderr.setEncoding('utf8')
-        proc.stdout.on('data', data => { stdout += data; output.append(data) })
-        proc.stderr.on('data', data => output.append(data))
+        proc.stdout.on('data', data => { stdout += data; output.append(data); onStdout?.(data) })
+        proc.stderr.on('data', data => { stderr += data; output.append(data) })
         proc.on('error', reject)
         proc.on('close', (code, signal) => {
             output.appendLine(`Exit: ${code}; signal: ${signal ?? 'none'}`)
-            code === 0 ? resolve(stdout) : reject(new Error(`EM•Scope exited with ${code}. See EM•Scope Output.`))
+            const reason = /\*\*\* ([^\r\n]+?) \*\*\*/.exec(stdout + '\n' + stderr)?.[1]
+            code === 0 ? resolve(stdout) : reject(new Error(reason ?? `EM•Scope exited with ${code}. See EM•Scope Output.`))
         })
     })
 }
@@ -305,7 +504,7 @@ function parseScore(text: string): Score {
 }
 function message(err: unknown) { return err instanceof Error ? err.message : String(err) }
 function escape(text: string) { return text.replace(/[&<>"']/g, ch => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[ch]!)) }
-function html(root: string, rows: Row[], status: string, nonce: string, editing?: Row, busy = false, period = 10, sortKey: SortKey = 'name', sortDescending = false) {
+function html(root: string, rows: Row[], status: string, nonce: string, editing?: Row, busy = false, period = 10, sortKey: SortKey = 'name', sortDescending = false, scanDefaults: ScanValues = { 'event-window': 20 }, editingDefaults = false) {
     const periodLabel = formatPeriod(period)
     const heading = (key: SortKey, label: string, id = '') => `<th ${id ? `id="${id}"` : ''} aria-sort="${sortKey === key ? sortDescending ? 'descending' : 'ascending' : 'none'}"><button class="sort-button ${sortKey === key ? 'active' : ''}" data-sort="${key}" ${busy ? 'disabled' : ''}>${label}<span class="sort-arrow">${sortKey === key ? sortDescending ? '▼' : '▲' : ''}</span></button></th>`
     const number = (n?: number, scale = 1) => n === undefined ? '—' : (n * scale).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })
@@ -333,6 +532,10 @@ function html(root: string, rows: Row[], status: string, nonce: string, editing?
     td:nth-child(2) { font-weight: 600; }
     .capture-name { display: block; width: 127px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
     td:nth-child(6), td:nth-child(7) { color: var(--scope-accent); font-weight: 600; }
+    .review-action { width: 28px; padding: 3px 0; color: var(--scope-blue); background: transparent; }
+    .scan-field { margin-bottom: 12px; }
+    .scan-field label { margin: 4px 0; }
+    .inherit-window input { display: inline; width: auto; margin-right: 5px; }
     .root-picker { display: flex; gap: 16px; align-items: center; flex-wrap: wrap; margin: 18px 0 24px; }
     .root-picker .root { margin: 0; }
     .capture-controls { display: inline-flex; align-items: center; gap: 5px; }
@@ -375,10 +578,8 @@ function html(root: string, rows: Row[], status: string, nonce: string, editing?
     small { display: block; margin-top: 4px; font-size: 11px; font-weight: normal; }
     .actions { margin-top: 22px; padding-top: 16px; border-top: 1px solid var(--vscode-panel-border); }
     @media (max-width: 700px) { body { padding: 18px; } th, td { padding: 10px; } }
-    </style></head><body><header class="masthead"><svg class="scope-mark" aria-hidden="true" viewBox="0 0 32 28" width="38" height="34" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="28" height="20" rx="3"/><path d="M5 13h5l3-7 5 13 3-6h6M12 26h8M16 22v4"/></svg><div><h1>EM<span class="dot">•</span>Scope</h1><p class="subtitle">Capture · Analyze · Compare</p></div></header><div class="root-picker"><p class="root">${escape(bashPath(root))}</p><div class="capture-controls"><button id="choose-captures" class="root-action" title="Choose capture folder" aria-label="Choose capture folder" ${busy ? 'disabled' : ''}><svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3 19V5h6l2 3h10v11z"/></svg></button><button id="refresh-captures" class="root-action" title="Rediscover captures and reload results" aria-label="Rediscover captures and reload results" ${busy ? 'disabled' : ''}><svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M20 7v5h-5M4 17v-5h5M5 10a7 7 0 0 1 12-4l3 6M4 12l3 6a7 7 0 0 0 12-4"/></svg></button><button id="reset-view" class="root-action" title="Reset table sort and What-if period" aria-label="Reset table sort and What-if period" ${busy ? 'disabled' : ''}><svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 11a8 8 0 1 1 2.3 6M4 5v6h6"/></svg></button><button id="capture-settings" class="root-action" title="Capture settings (preview)" aria-label="Capture settings (preview)" aria-disabled="true"><svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"><path d="M10 2h4l.6 3 2 .9 2.6-1.6 2.8 2.8-1.6 2.6.9 2 3 .6v4l-3 .6-.9 2 1.6 2.6-2.8 2.8-2.6-1.6-2 .9-.6 3h-4l-.6-3-2-.9-2.6 1.6L2 21.5l1.6-2.6-.9-2-3-.6v-4l3-.6.9-2L2 7.1l2.8-2.8 2.6 1.6 2-.9z" transform="translate(1 -1) scale(.92 .88)"/><circle cx="12" cy="11.6" r="3"/></svg></button><button id="grab-capture" class="root-action" title="Grab a new capture (preview)" aria-label="Grab a new capture (preview)" aria-disabled="true"><svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg></button></div></div><div class="toolbar"><button id="whatif" ${busy ? 'disabled' : ''} title="What if… Change the projected scoring interval" aria-label="What if… Change the projected scoring interval"><svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><circle cx="12" cy="14" r="7"/><path d="M10 3h4m-2 0v4m5 1 2-2m-7 4v4"/></svg></button></div><div class="table"><table><thead><tr><th aria-label="Status"></th>${heading('name', 'Capture')}${heading('events', 'Events')}${heading('sleep', 'Sleep µA')}${heading('energy', 'Event µJ')}${heading('score', '<span class="score-heading">EM•eralds</span> [1s]')}${heading('projection', `<span class="score-heading">EM•eralds</span> [${periodLabel}]`, 'projection-heading')}<th></th></tr></thead><tbody>${rows.map(row => `<tr><td class="status-cell">${statusIcon(row.status)}</td><td><span class="capture-name" title="${escape(row.name)}">${escape(row.name)}</span></td><td>${row.count === undefined ? '—' : row.count.toLocaleString()}</td><td>${number(row.one?.sleepCurrent, 1e6)}</td><td>${number(row.one?.eventEnergy, 1e6)}</td><td>${number(row.one?.emeralds)}</td><td>${number(row.ten?.emeralds)}</td><td><button data-edit="${escape(row.name)}" ${busy ? 'disabled' : ''} title="Adjust scan parameters and detect events" aria-label="Adjust scan parameters and detect events"><svg aria-hidden="true" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><path d="M4 6h16M4 12h16M4 18h16"/><path d="M8 3v6M16 9v6M10 15v6"/></svg></button> <button data-waveform="${escape(row.name)}" ${busy || !row.one || !row.count ? 'disabled' : ''} title="Explore the marked waveform in Joulescope Viewer" aria-label="Explore the marked waveform in Joulescope Viewer"><svg aria-hidden="true" viewBox="0 0 32 28" width="20" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="28" height="20" rx="3"/><path d="M5 13h5l3-7 5 13 3-6h6M12 26h8M16 22v4"/></svg></button></td></tr>`).join('')}</tbody></table></div><p class="note">Scores project the measured event and sleep energy at the indicated repetition period. Commands and diagnostics are available in Output → EM•Scope.</p>${editing ? `<dialog open><form id="scan-form"><h2>Scan ${escape(editing.name)}</h2><p>Blank fields omit that option. Raw recording is unchanged.</p>${fields.map(([key, label, help]) => {
-        const saved = editing.options?.find(opt => opt.startsWith(`--${key} `))?.split(/\s+/)[1] ?? ''
-        return `<label>${label}<input name="${key}" type="number" step="${key === 'trim' ? '1' : 'any'}" min="0" value="${escape(saved)}" placeholder="${key === 'sleep-window' ? '500 (default)' : 'Not set'}"><small>${help}</small></label>`
-    }).join('')}<div class="actions"><button type="button" id="cancel">Cancel</button><button type="submit">Scan</button></div></form></dialog>` : ''}
+    </style></head><body><header class="masthead"><svg class="scope-mark" aria-hidden="true" viewBox="0 0 32 28" width="38" height="34" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="28" height="20" rx="3"/><path d="M5 13h5l3-7 5 13 3-6h6M12 26h8M16 22v4"/></svg><div><h1>EM<span class="dot">•</span>Scope</h1><p class="subtitle">Capture · Analyze · Compare</p></div></header><div class="root-picker"><p class="root">${escape(bashPath(root))}</p><div class="capture-controls"><button id="choose-captures" class="root-action" title="Choose capture folder" aria-label="Choose capture folder" ${busy ? 'disabled' : ''}><svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3 19V5h6l2 3h10v11z"/></svg></button><button id="refresh-captures" class="root-action" title="Rediscover and rescan captures with current settings" aria-label="Rediscover and rescan captures with current settings" ${busy ? 'disabled' : ''}><svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M20 7v5h-5M4 17v-5h5M5 10a7 7 0 0 1 12-4l3 6M4 12l3 6a7 7 0 0 0 12-4"/></svg></button><button id="reset-view" class="root-action" title="Reset table sort and What-if period" aria-label="Reset table sort and What-if period" ${busy ? 'disabled' : ''}><svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 11a8 8 0 1 1 2.3 6M4 5v6h6"/></svg></button><button id="capture-settings" class="root-action" title="Capture folder scan defaults" aria-label="Capture folder scan defaults" ${busy ? 'disabled' : ''}><svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"><path d="M10 2h4l.6 3 2 .9 2.6-1.6 2.8 2.8-1.6 2.6.9 2 3 .6v4l-3 .6-.9 2 1.6 2.6-2.8 2.8-2.6-1.6-2 .9-.6 3h-4l-.6-3-2-.9-2.6 1.6L2 21.5l1.6-2.6-.9-2-3-.6v-4l3-.6.9-2L2 7.1l2.8-2.8 2.6 1.6 2-.9z" transform="translate(1 -1) scale(.92 .88)"/><circle cx="12" cy="11.6" r="3"/></svg></button><button id="grab-capture" class="root-action" title="Grab a new capture" aria-label="Grab a new capture" ${busy ? 'disabled' : ''}><svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg></button></div></div><p class="note">Workload period: 1 s · Event window: ${scanDefaults['event-window'] == null ? 'Not set' : number(scanDefaults['event-window']) + ' ms'}</p><div class="toolbar"><button id="whatif" ${busy ? 'disabled' : ''} title="What if… Change the projected scoring interval" aria-label="What if… Change the projected scoring interval"><svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><circle cx="12" cy="14" r="7"/><path d="M10 3h4m-2 0v4m5 1 2-2m-7 4v4"/></svg></button></div><div class="table"><table><thead><tr><th aria-label="Status"></th>${heading('name', 'Capture')}${heading('events', 'Events')}${heading('sleep', 'Sleep µA')}${heading('energy', 'Event µJ')}${heading('score', '<span class="score-heading">EM•eralds</span> [1s]')}${heading('projection', `<span class="score-heading">EM•eralds</span> [${periodLabel}]`, 'projection-heading')}<th></th></tr></thead><tbody>${rows.map(row => `<tr><td class="status-cell">${statusIcon(row.status)}</td><td><span class="capture-name" title="${escape(row.name)}">${escape(row.name)}</span></td><td>${row.count === undefined ? '—' : row.count.toLocaleString()}</td><td>${number(row.one?.sleepCurrent, 1e6)}</td><td>${number(row.one?.eventEnergy, 1e6)}</td><td>${number(row.one?.emeralds)}</td><td>${number(row.ten?.emeralds)}</td><td><button data-edit="${escape(row.name)}" ${busy || row.status.startsWith('Error: Grab failed') ? 'disabled' : ''} title="Adjust scan parameters and detect events" aria-label="Adjust scan parameters and detect events"><svg aria-hidden="true" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><path d="M4 6h16M4 12h16M4 18h16"/><path d="M8 3v6M16 9v6M10 15v6"/></svg></button> <button data-waveform="${escape(row.name)}" ${busy || !row.count ? 'disabled' : ''} title="Explore the marked waveform in Joulescope Viewer" aria-label="Explore the marked waveform in Joulescope Viewer"><svg aria-hidden="true" viewBox="0 0 32 28" width="20" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="28" height="20" rx="3"/><path d="M5 13h5l3-7 5 13 3-6h6M12 26h8M16 22v4"/></svg></button>${row.newCapture || row.candidate ? ` <button class="review-action" data-keep="${escape(row.name)}" title="Accept this scan and its scores" aria-label="Accept this scan and its scores" ${busy || !row.count ? 'disabled' : ''}>✓</button> <button class="review-action" data-discard="${escape(row.name)}" title="Discard ${row.candidate ? 'candidate scan' : 'capture'}" aria-label="Discard ${row.candidate ? 'candidate scan' : 'capture'}" ${busy ? 'disabled' : ''}>✕</button>` : ''}</td></tr>`).join('')}</tbody></table></div>${rows.some(row => (row.newCapture || row.candidate) && row.count) ? '<p class="note">Provisional scores update after Scan. Inspect the waveform, refine the scan, or click ✓ Keep.</p>' : ''}<p class="note">Scores project the measured event and sleep energy at the indicated repetition period. Commands and diagnostics are available in Output → EM•Scope.</p>${editing ? `<dialog open><form id="scan-form"><h2>Scan ${escape(editing.name)}</h2><p>Uncheck a field to override it. A blank override omits that option.</p>${scanInputs(scanDefaults, editing.overrides ?? {})}<div class="actions"><button type="button" id="cancel">Cancel</button><button type="submit">Scan</button></div></form></dialog>` : ''}
+    ${editingDefaults ? `<dialog open><form id="defaults-form"><h2>Capture folder settings</h2><p>Workload period: 1 s</p><h3>Scan defaults</h3>${scanInputs(scanDefaults)}<p>Blank fields use EM•Scope defaults. Refresh applies these settings to inheriting captures.</p><div class="actions"><button type="button" id="cancel-defaults">Cancel</button><button type="submit">Save</button></div></form></dialog>` : ''}
     <script nonce="${nonce}">
     const vscode = acquireVsCodeApi();
     document.querySelectorAll('[data-sort]').forEach(button => button.addEventListener('click', () => vscode.postMessage({kind:'sort',key:button.dataset.sort})));
@@ -395,6 +596,8 @@ function html(root: string, rows: Row[], status: string, nonce: string, editing?
     document.getElementById('choose-captures').addEventListener('click', () => vscode.postMessage({kind:'choose'}));
     document.getElementById('refresh-captures').addEventListener('click', () => vscode.postMessage({kind:'refresh'}));
     document.getElementById('reset-view').addEventListener('click', () => vscode.postMessage({kind:'reset-view'}));
+    document.getElementById('grab-capture').addEventListener('click', () => vscode.postMessage({kind:'grab'}));
+    document.getElementById('capture-settings').addEventListener('click', () => vscode.postMessage({kind:'capture-settings'}));
     const alignWhatIf = () => {
         const button = document.getElementById('whatif');
         const heading = document.getElementById('projection-heading');
@@ -408,8 +611,34 @@ function html(root: string, rows: Row[], status: string, nonce: string, editing?
     document.querySelector('.table').addEventListener('scroll', alignWhatIf);
     alignWhatIf();
     document.getElementById('whatif').addEventListener('click', () => vscode.postMessage({kind:'whatif'}));
+    document.querySelectorAll('[data-keep]').forEach(button => button.addEventListener('click', () => vscode.postMessage({kind:'keep',name:button.dataset.keep})));
+    document.querySelectorAll('[data-discard]').forEach(button => button.addEventListener('click', () => vscode.postMessage({kind:'discard',name:button.dataset.discard})));
     const form = document.getElementById('scan-form');
+    const defaultsForm = document.getElementById('defaults-form');
+    if (defaultsForm) {
+        const dialog = defaultsForm.closest('dialog'); dialog.close(); dialog.showModal();
+        const cancel = () => vscode.postMessage({kind:'cancel'});
+        document.getElementById('cancel-defaults').addEventListener('click', cancel);
+        dialog.addEventListener('cancel', event => { event.preventDefault(); cancel(); });
+        defaultsForm.addEventListener('submit', event => {
+            event.preventDefault();
+            vscode.postMessage({kind:'save-defaults',values: Object.fromEntries(new FormData(defaultsForm))});
+        });
+    }
     if (form) {
+        for (const inherit of form.querySelectorAll('[data-inherit]')) {
+            const input = form.elements.namedItem(inherit.dataset.inherit);
+            let override = input.value;
+            const sync = () => {
+                input.readOnly = inherit.checked;
+                input.value = inherit.checked ? input.dataset.folderValue : override;
+            };
+            inherit.addEventListener('change', () => {
+                if (inherit.checked) override = input.value;
+                sync();
+            });
+            sync();
+        }
         const dialog = document.querySelector('dialog'); dialog.close(); dialog.showModal();
         const cancel = () => vscode.postMessage({kind:'cancel'});
         document.getElementById('cancel').addEventListener('click', cancel);
@@ -438,7 +667,7 @@ function bashPath(path: string): string {
 function statusIcon(status: string): string {
     const ready = status === 'Ready'
     const error = status.startsWith('Error:') || status.startsWith('No events')
-    const pending = /Loading|Unpacking|Scanning|Refreshing/.test(status)
+    const pending = /Loading|Unpacking|Scanning|Refreshing|Grabbing/.test(status)
     const icon = ready ? '✓' : error ? '✕' : pending ? '⌛' : '○'
     const kind = error ? 'error' : ready || pending ? '' : 'waiting'
     return `<span class="status-icon ${kind}" role="img" title="${escape(status)}" aria-label="${escape(status)}">${icon}</span>`
@@ -467,6 +696,9 @@ function sortedRows(rows: Row[], key: SortKey, descending: boolean): Row[] {
     }
     const byName = (a: Row, b: Row) => a.name.localeCompare(b.name, undefined, { sensitivity: 'base' }) || a.name.localeCompare(b.name)
     return [...rows].sort((a, b) => {
+        const ap = Boolean(a.newCapture || a.candidate), bp = Boolean(b.newCapture || b.candidate)
+        if (ap !== bp) return ap ? -1 : 1
+        if (ap && bp) return 0
         if (key === 'name') return byName(a, b) * (descending ? -1 : 1)
         const av = value(a), bv = value(b)
         if (av === undefined || bv === undefined) return av === bv ? byName(a, b) : av === undefined ? 1 : -1
@@ -476,4 +708,91 @@ function sortedRows(rows: Row[], key: SortKey, descending: boolean): Row[] {
 
 function formatPeriod(period: number): string {
     return [Math.floor(period / 3600), Math.floor(period / 60) % 60, period % 60].map(part => String(part).padStart(2, '0')).join(':')
+}
+
+
+async function validateCaptureName(root: string, name: string): Promise<string | undefined> {
+    const parts = name.split('/')
+    if (!parts.every(part => /^[A-Za-z0-9_-]+$/.test(part))) return 'Use letters, digits, dashes, and underscores. Separate folders with /.'
+    if (parts.some(part => /^(CON|PRN|AUX|NUL|COM[0-9]|LPT[0-9])$/i.test(part))) return 'Choose a name that is valid on Windows.'
+    let dir = root
+    for (const [index, part] of parts.entries()) {
+        dir = Path.join(dir, part)
+        const entry = await capturePathEntry(dir)
+        if (!entry) return
+        if (index === parts.length - 1) return 'That capture path already exists.'
+        if (!entry.isDirectory() || entry.isSymbolicLink()) return 'Parent paths must be ordinary folders.'
+    }
+}
+
+async function capturePathEntry(dir: string) {
+    try { return await Fs.lstat(dir) }
+    catch (err) {
+        if ((err as NodeJS.ErrnoException).code !== 'ENOENT') throw err
+        return undefined
+    }
+}
+
+async function createCaptureFolder(root: string, name: string): Promise<string> {
+    let dir = root
+    const parts = name.split('/')
+    for (const [index, part] of parts.entries()) {
+        dir = Path.join(dir, part)
+        if (index === parts.length - 1) await Fs.mkdir(dir)
+        else {
+            try { await Fs.mkdir(dir) }
+            catch (err) {
+                if ((err as NodeJS.ErrnoException).code !== 'EEXIST') throw err
+                const entry = await Fs.lstat(dir)
+                if (!entry.isDirectory() || entry.isSymbolicLink()) throw new Error('Parent paths must be ordinary folders.')
+            }
+        }
+    }
+    return dir
+}
+
+function grabError(reason: string): string {
+    if (reason.includes('no PPK2 analyzer found')) return `${reason}. Check the USB connection and look for the green light.`
+    if (reason.includes('no PPK2 data port found')) return `${reason}. If Nordic Power Profiler has the PPK2 selected, close it and wait for the green light before retrying.`
+    return reason
+}
+
+
+function readScanForm(values: Record<string, unknown> | undefined, row: boolean): ScanValues {
+    const result: ScanValues = {}
+    for (const [field, label] of fields) {
+        if (row && values?.[`inherit-${field}`] === 'on') continue
+        const text = values?.[field]
+        if (typeof text !== 'string') throw new Error(`Invalid ${label}`)
+        if (!text.trim()) {
+            if (row) result[field] = null
+            continue
+        }
+        const number = Number(text)
+        const positive = field === 'event-window' || field === 'sleep-window' || field === 'trim'
+        if (!Number.isFinite(number) || number < 0 || (positive && number === 0) || (field === 'trim' && !Number.isInteger(number))) {
+            throw new Error(`Invalid ${label}`)
+        }
+        result[field] = number
+    }
+    return result
+}
+
+function scanArguments(values: ScanValues): string[] {
+    const args: string[] = []
+    for (const [field] of fields) {
+        const value = values[field]
+        if (value != null) args.push(`--${field}`, String(value))
+    }
+    return args
+}
+
+function scanInputs(defaults: ScanValues, overrides?: ScanValues): string {
+    return fields.map(([field, label, help]) => {
+        const inherited = overrides !== undefined && !Object.prototype.hasOwnProperty.call(overrides, field)
+        const folderValue = String(defaults[field] ?? '')
+        const value = overrides === undefined || inherited ? folderValue : String(overrides[field] ?? '')
+        const placeholder = field === 'sleep-window' ? '500 (CLI default)' : 'Not set'
+        return `<div class="scan-field"><label>${label}<input name="${field}" type="number" min="0" step="${field === 'trim' ? '1' : 'any'}" value="${escape(value)}" data-folder-value="${escape(folderValue)}" placeholder="${placeholder}"></label><small>${help}</small>${overrides === undefined ? '' : `<label class="inherit-window"><input name="inherit-${field}" data-inherit="${field}" type="checkbox" ${inherited ? 'checked' : ''}> Use folder default</label>`}</div>`
+    }).join('')
 }
