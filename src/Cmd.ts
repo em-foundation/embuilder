@@ -259,6 +259,21 @@ ${bodyText}
 </div>
 <script nonce='${nonce}'>
   const vscode = acquireVsCodeApi()
+  const frame = document.querySelector('.frame')
+  const footer = document.querySelector('.home-footer')
+  if (footer) document.body.appendChild(footer)
+  function fitHome() {
+    frame.style.zoom = '1'
+    const scale = Math.min(1,
+      window.innerWidth / (frame.scrollWidth + 48),
+      (window.innerHeight * 0.9) / (frame.scrollHeight + 48))
+    frame.style.zoom = String(Math.max(0.01, scale))
+    if (footer) footer.style.fontSize = String(20 * Math.max(0.01, scale)) + 'px'
+  }
+  window.addEventListener('resize', fitHome)
+  window.addEventListener('load', fitHome)
+  document.fonts.ready.then(fitHome)
+  fitHome()
   document.addEventListener('click', (e) => {
     const a = e.target.closest('.cmd-wc')
     if (!a) return
