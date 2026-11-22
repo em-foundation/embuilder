@@ -45,7 +45,7 @@
         "commands": [
             {
                 "command": "em.newCaptureCollection",
-                "title": "New Capture Collection"
+                "title": "New EM•Scope Captures"
             },
             {
                 "command": "embuilder.openCaptureCollection",

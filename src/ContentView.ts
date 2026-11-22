@@ -1,8 +1,7 @@
 import * as Vsc from 'vscode'
+import * as CaptureCollection from './CaptureCollection'
 
 const VscFs = Vsc.workspace.fs
-
-export const CAPTURE_COLLECTION_NAME = 'em-captures'
 
 type NodeKind = 'workspace' | 'package' | 'bucket' | 'captures' | 'dir' | 'file' | 'build'
 
@@ -246,10 +245,10 @@ export class Provider implements Vsc.TreeDataProvider<Node> {
                 const uri = Vsc.Uri.joinPath(element.uri, name)
 
                 if ((type & Vsc.FileType.Directory) !== 0) {
-                    if (element.kind === 'bucket' && name === CAPTURE_COLLECTION_NAME) {
+                    if (element.kind === 'bucket' && CaptureCollection.isFolderName(name)) {
                         const item = new Node(element, 'captures', uri, name, Vsc.TreeItemCollapsibleState.None)
                         item.resourceUri = uri
-                        item.tooltip = 'Capture Collection — open in EM•Scope'
+                        item.tooltip = 'EM•Scope Capture Collection — open in EM•Scope'
                         item.iconPath = this.icon('icons/captures.svg')
                         item.contextValue = 'embuilder.captures'
                         item.command = { command: 'embuilder.openCaptureCollection', title: 'Open in EM•Scope', arguments: [item] }

@@ -6,6 +6,7 @@ import { EM_COLOR } from './StatusItems'
 import { createRequire } from 'module'
 import { spawn } from 'child_process'
 import * as Yaml from 'js-yaml'
+import * as CaptureCollection from './CaptureCollection'
 
 type Score = { type: string, sleepCurrent: number, eventEnergy: number, emeralds: number }
 type Row = { name: string, dir: string, status: string, newCapture?: boolean, candidate?: string, overrides?: ScanValues, count?: number, options?: string[], one?: Score, ten?: Score }
@@ -40,8 +41,25 @@ export function init(ctx: Vsc.ExtensionContext) {
         const workspace = Vsc.workspace.workspaceFolders?.[0]?.uri
         if (!workspace) { Vsc.window.showErrorMessage('Open an Emporium workspace first.'); return }
         const savedRoot = ctx.workspaceState.get<string>('embuilder.scope.lastRoot')
-        const root = uri ?? (savedRoot ? Vsc.Uri.file(savedRoot) : Vsc.Uri.joinPath(workspace, 'captures'))
-        if (root.scheme !== 'file') { Vsc.window.showErrorMessage('EM•Scope requires a local capture folder.'); return }
+        const defaultRoot = Vsc.Uri.file(CaptureCollection.defaultFolder(workspace.fsPath))
+        let root = uri ?? (savedRoot ? Vsc.Uri.file(savedRoot) : defaultRoot)
+        if (root.scheme === 'file' && Path.relative(Path.join(workspace.fsPath, 'captures'), root.fsPath) === '') root = defaultRoot
+        let collectionName = root.scheme === 'file' ? CaptureCollection.identifier(workspace.fsPath, root.fsPath) : undefined
+        if (!collectionName && !uri) {
+            root = defaultRoot
+            collectionName = CaptureCollection.identifier(workspace.fsPath, root.fsPath)
+        }
+        if (!collectionName) {
+            Vsc.window.showErrorMessage('Open an EM•Scope capture collection from the EM•Script Content Explorer.')
+            return
+        }
+        let collection: CaptureCollection.Settings
+        try { collection = await CaptureCollection.readSettings(root.fsPath) }
+        catch (err) {
+            Vsc.window.showErrorMessage('Unable to open Capture Collection settings: ' + message(err))
+            return
+        }
+        const workloadSeconds = collection.workload_period_ms / 1000
         const key = root.toString()
         await ctx.workspaceState.update('embuilder.scope.lastRoot', root.fsPath)
         if (!refresh && currentPanel && (!uri || currentRoot === key)) { currentPanel.reveal(); return }
@@ -60,7 +78,7 @@ export function init(ctx: Vsc.ExtensionContext) {
         const panel = currentPanel
         currentRoot = key
         scopeStatus.text = '$(sync~spin) EM•Scope: Loading…'
-        scopeStatus.tooltip = bashPath(root.fsPath)
+        scopeStatus.tooltip = 'Capture collection: ' + collectionName
         scopeStatus.show()
         panel.reveal()
         let disposed = false
@@ -109,7 +127,7 @@ export function init(ctx: Vsc.ExtensionContext) {
                 scopeStatus.text = `$(sync~spin) EM•Scope: ${message}`
             }
             if (message && !busy) Vsc.window.setStatusBarMessage(`EM•Scope: ${message}`, 5000)
-            panel.webview.html = html(root.fsPath, sortedRows(rows, sortKey, sortDescending), message, nonce, editing, busy, period, sortKey, sortDescending, scanDefaults, editingDefaults)
+            panel.webview.html = html(collectionName!, sortedRows(rows, sortKey, sortDescending), message, nonce, editing, busy, period, sortKey, sortDescending, scanDefaults, editingDefaults, workloadSeconds)
         }
         rootListeners.push(panel.webview.onDidReceiveMessage(async msg => {
             if (busy) return
@@ -120,16 +138,10 @@ export function init(ctx: Vsc.ExtensionContext) {
             }
             if (msg?.kind === 'home-captures') {
                 busy = true
-                await Vsc.commands.executeCommand('embuilder.showScope', Vsc.Uri.joinPath(workspace, 'captures'), true)
+                await Vsc.commands.executeCommand('embuilder.showScope', defaultRoot, true)
                 return
             }
-            if (msg?.kind !== 'choose') return
-            const chosen = await Vsc.window.showOpenDialog({
-                title: 'Choose Captures', defaultUri: root,
-                canSelectFolders: true, canSelectFiles: false, canSelectMany: false,
-                openLabel: 'Choose Captures',
-            })
-            if (chosen?.[0]) await Vsc.commands.executeCommand('embuilder.showScope', chosen[0])
+
         }))
         render('Discovering captures…')
         try {
@@ -166,7 +178,7 @@ export function init(ctx: Vsc.ExtensionContext) {
                 const analysis = await readAnalysis(row, dir)
                 if (!row.count) throw new Error('No events found. Adjust the scan before keeping it.')
                 if (analysis.event_width === undefined) throw new Error('Set Event window (ms) before keeping the scan.')
-                const one = parseScore(await run(['view', '-c', dir, '-w', '1', '--json']))
+                const one = parseScore(await run(['view', '-c', dir, '-w', String(workloadSeconds), '--json']))
                 const ten = parseScore(await run(['view', '-c', dir, '-w', String(period), '--json']))
                 row.one = one; row.ten = ten; row.status = 'Ready'
             }
@@ -514,7 +526,7 @@ function parseScore(text: string): Score {
 }
 function message(err: unknown) { return err instanceof Error ? err.message : String(err) }
 function escape(text: string) { return text.replace(/[&<>"']/g, ch => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[ch]!)) }
-function html(root: string, rows: Row[], status: string, nonce: string, editing?: Row, busy = false, period = 10, sortKey: SortKey = 'name', sortDescending = false, scanDefaults: ScanValues = { 'event-window': 20 }, editingDefaults = false) {
+function html(collectionName: string, rows: Row[], status: string, nonce: string, editing?: Row, busy = false, period = 10, sortKey: SortKey = 'name', sortDescending = false, scanDefaults: ScanValues = { 'event-window': 20 }, editingDefaults = false, workloadSeconds = 1) {
     const periodLabel = formatPeriod(period)
     const heading = (key: SortKey, label: string, id = '') => `<th ${id ? `id="${id}"` : ''} aria-sort="${sortKey === key ? sortDescending ? 'descending' : 'ascending' : 'none'}"><button class="sort-button ${sortKey === key ? 'active' : ''}" data-sort="${key}" ${busy ? 'disabled' : ''}>${label}<span class="sort-arrow">${sortKey === key ? sortDescending ? '▼' : '▲' : ''}</span></button></th>`
     const number = (n?: number, scale = 1) => n === undefined ? '—' : (n * scale).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })
@@ -588,8 +600,8 @@ function html(root: string, rows: Row[], status: string, nonce: string, editing?
     small { display: block; margin-top: 4px; font-size: 11px; font-weight: normal; }
     .actions { margin-top: 22px; padding-top: 16px; border-top: 1px solid var(--vscode-panel-border); }
     @media (max-width: 700px) { body { padding: 18px; } th, td { padding: 10px; } }
-    </style></head><body><header class="masthead"><svg class="scope-mark" aria-hidden="true" viewBox="0 0 32 28" width="38" height="34" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="28" height="20" rx="3"/><path d="M5 13h5l3-7 5 13 3-6h6M12 26h8M16 22v4"/></svg><div><h1>EM<span class="dot">•</span>Scope</h1><p class="subtitle">Capture · Analyze · Compare</p></div></header><div class="root-picker"><p class="root">${escape(bashPath(root))}</p><div class="capture-controls"><button id="home-captures" class="root-action" title="Open default captures" aria-label="Open default captures" ${busy ? 'disabled' : ''}><svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10l9-7 9 7M5 9v12h5v-7h4v7h5V9"/></svg></button><button id="choose-captures" class="root-action" title="Choose capture folder" aria-label="Choose capture folder" ${busy ? 'disabled' : ''}><svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3 19V5h6l2 3h10v11z"/></svg></button><button id="refresh-captures" class="root-action" title="Rediscover and rescan captures with current settings" aria-label="Rediscover and rescan captures with current settings" ${busy ? 'disabled' : ''}><svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M20 7v5h-5M4 17v-5h5M5 10a7 7 0 0 1 12-4l3 6M4 12l3 6a7 7 0 0 0 12-4"/></svg></button><button id="reset-view" class="root-action" title="Reset table sort and What-if period" aria-label="Reset table sort and What-if period" ${busy ? 'disabled' : ''}><svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 11a8 8 0 1 1 2.3 6M4 5v6h6"/></svg></button><button id="capture-settings" class="root-action" title="Capture folder scan defaults" aria-label="Capture folder scan defaults" ${busy ? 'disabled' : ''}><svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"><path d="M10 2h4l.6 3 2 .9 2.6-1.6 2.8 2.8-1.6 2.6.9 2 3 .6v4l-3 .6-.9 2 1.6 2.6-2.8 2.8-2.6-1.6-2 .9-.6 3h-4l-.6-3-2-.9-2.6 1.6L2 21.5l1.6-2.6-.9-2-3-.6v-4l3-.6.9-2L2 7.1l2.8-2.8 2.6 1.6 2-.9z" transform="translate(1 -1) scale(.92 .88)"/><circle cx="12" cy="11.6" r="3"/></svg></button><button id="grab-capture" class="root-action" title="Grab a new capture" aria-label="Grab a new capture" ${busy ? 'disabled' : ''}><svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg></button></div></div><p class="note">Workload period: 1 s · Event window: ${scanDefaults['event-window'] == null ? 'Not set' : number(scanDefaults['event-window']) + ' ms'}</p><div class="toolbar"><button id="whatif" ${busy ? 'disabled' : ''} title="What if… Change the projected scoring interval" aria-label="What if… Change the projected scoring interval"><svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><circle cx="12" cy="14" r="7"/><path d="M10 3h4m-2 0v4m5 1 2-2m-7 4v4"/></svg></button></div><div class="table"><table><thead><tr><th aria-label="Status"></th>${heading('name', 'Capture')}${heading('events', 'Events')}${heading('sleep', 'Sleep µA')}${heading('energy', 'Event µJ')}${heading('score', '<span class="score-heading">EM•eralds</span> [1s]')}${heading('projection', `<span class="score-heading">EM•eralds</span> [${periodLabel}]`, 'projection-heading')}<th></th></tr></thead><tbody>${rows.map(row => `<tr><td class="status-cell">${statusIcon(row.status)}</td><td><span class="capture-name" title="${escape(row.name)}">${escape(row.name)}</span></td><td>${row.count === undefined ? '—' : row.count.toLocaleString()}</td><td>${number(row.one?.sleepCurrent, 1e6)}</td><td>${number(row.one?.eventEnergy, 1e6)}</td><td>${number(row.one?.emeralds)}</td><td>${number(row.ten?.emeralds)}</td><td><button data-edit="${escape(row.name)}" ${busy || row.status.startsWith('Error: Grab failed') ? 'disabled' : ''} title="Adjust scan parameters and detect events" aria-label="Adjust scan parameters and detect events"><svg aria-hidden="true" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><path d="M4 6h16M4 12h16M4 18h16"/><path d="M8 3v6M16 9v6M10 15v6"/></svg></button> <button data-waveform="${escape(row.name)}" ${busy || !row.count ? 'disabled' : ''} title="Explore the marked waveform in Joulescope Viewer" aria-label="Explore the marked waveform in Joulescope Viewer"><svg aria-hidden="true" viewBox="0 0 32 28" width="20" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="28" height="20" rx="3"/><path d="M5 13h5l3-7 5 13 3-6h6M12 26h8M16 22v4"/></svg></button>${row.newCapture || row.candidate ? ` <button class="review-action" data-keep="${escape(row.name)}" title="Accept this scan and its scores" aria-label="Accept this scan and its scores" ${busy || !row.count ? 'disabled' : ''}>✓</button> <button class="review-action" data-discard="${escape(row.name)}" title="Discard ${row.candidate ? 'candidate scan' : 'capture'}" aria-label="Discard ${row.candidate ? 'candidate scan' : 'capture'}" ${busy ? 'disabled' : ''}>✕</button>` : ''}</td></tr>`).join('')}</tbody></table></div>${rows.some(row => (row.newCapture || row.candidate) && row.count) ? '<p class="note">Provisional scores update after Scan. Inspect the waveform, refine the scan, or click ✓ Keep.</p>' : ''}<p class="note">Scores project the measured event and sleep energy at the indicated repetition period. Commands and diagnostics are available in Output → EM•Scope.</p>${editing ? `<dialog open><form id="scan-form"><h2>Scan ${escape(editing.name)}</h2><p>Uncheck a field to override it. A blank override omits that option.</p>${scanInputs(scanDefaults, editing.overrides ?? {})}<div class="actions"><button type="button" id="cancel">Cancel</button><button type="submit">Scan</button></div></form></dialog>` : ''}
-    ${editingDefaults ? `<dialog open><form id="defaults-form"><h2>Capture folder settings</h2><p>Workload period: 1 s</p><h3>Scan defaults</h3>${scanInputs(scanDefaults)}<p>Blank fields use EM•Scope defaults. Refresh applies these settings to inheriting captures.</p><div class="actions"><button type="button" id="cancel-defaults">Cancel</button><button type="submit">Save</button></div></form></dialog>` : ''}
+    </style></head><body><header class="masthead"><svg class="scope-mark" aria-hidden="true" viewBox="0 0 32 28" width="38" height="34" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="28" height="20" rx="3"/><path d="M5 13h5l3-7 5 13 3-6h6M12 26h8M16 22v4"/></svg><div><h1>EM<span class="dot">•</span>Scope</h1><p class="subtitle">Capture · Analyze · Compare</p></div></header><div class="root-picker"><p class="root">${escape(collectionName)}</p><div class="capture-controls"><button id="home-captures" class="root-action" title="Open default captures" aria-label="Open default captures" ${busy ? 'disabled' : ''}><svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10l9-7 9 7M5 9v12h5v-7h4v7h5V9"/></svg></button><button id="refresh-captures" class="root-action" title="Rediscover and rescan captures with current settings" aria-label="Rediscover and rescan captures with current settings" ${busy ? 'disabled' : ''}><svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M20 7v5h-5M4 17v-5h5M5 10a7 7 0 0 1 12-4l3 6M4 12l3 6a7 7 0 0 0 12-4"/></svg></button><button id="reset-view" class="root-action" title="Reset table sort and What-if period" aria-label="Reset table sort and What-if period" ${busy ? 'disabled' : ''}><svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 11a8 8 0 1 1 2.3 6M4 5v6h6"/></svg></button><button id="capture-settings" class="root-action" title="Capture folder scan defaults" aria-label="Capture folder scan defaults" ${busy ? 'disabled' : ''}><svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"><path d="M10 2h4l.6 3 2 .9 2.6-1.6 2.8 2.8-1.6 2.6.9 2 3 .6v4l-3 .6-.9 2 1.6 2.6-2.8 2.8-2.6-1.6-2 .9-.6 3h-4l-.6-3-2-.9-2.6 1.6L2 21.5l1.6-2.6-.9-2-3-.6v-4l3-.6.9-2L2 7.1l2.8-2.8 2.6 1.6 2-.9z" transform="translate(1 -1) scale(.92 .88)"/><circle cx="12" cy="11.6" r="3"/></svg></button><button id="grab-capture" class="root-action" title="Grab a new capture" aria-label="Grab a new capture" ${busy ? 'disabled' : ''}><svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg></button></div></div><p class="note">Workload period: ${workloadSeconds} s · Event window: ${scanDefaults['event-window'] == null ? 'Not set' : number(scanDefaults['event-window']) + ' ms'}</p><div class="toolbar"><button id="whatif" ${busy ? 'disabled' : ''} title="What if… Change the projected scoring interval" aria-label="What if… Change the projected scoring interval"><svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><circle cx="12" cy="14" r="7"/><path d="M10 3h4m-2 0v4m5 1 2-2m-7 4v4"/></svg></button></div><div class="table"><table><thead><tr><th aria-label="Status"></th>${heading('name', 'Capture')}${heading('events', 'Events')}${heading('sleep', 'Sleep µA')}${heading('energy', 'Event µJ')}${heading('score', '<span class="score-heading">EM•eralds</span> [1s]')}${heading('projection', `<span class="score-heading">EM•eralds</span> [${periodLabel}]`, 'projection-heading')}<th></th></tr></thead><tbody>${rows.map(row => `<tr><td class="status-cell">${statusIcon(row.status)}</td><td><span class="capture-name" title="${escape(row.name)}">${escape(row.name)}</span></td><td>${row.count === undefined ? '—' : row.count.toLocaleString()}</td><td>${number(row.one?.sleepCurrent, 1e6)}</td><td>${number(row.one?.eventEnergy, 1e6)}</td><td>${number(row.one?.emeralds)}</td><td>${number(row.ten?.emeralds)}</td><td><button data-edit="${escape(row.name)}" ${busy || row.status.startsWith('Error: Grab failed') ? 'disabled' : ''} title="Adjust scan parameters and detect events" aria-label="Adjust scan parameters and detect events"><svg aria-hidden="true" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><path d="M4 6h16M4 12h16M4 18h16"/><path d="M8 3v6M16 9v6M10 15v6"/></svg></button> <button data-waveform="${escape(row.name)}" ${busy || !row.count ? 'disabled' : ''} title="Explore the marked waveform in Joulescope Viewer" aria-label="Explore the marked waveform in Joulescope Viewer"><svg aria-hidden="true" viewBox="0 0 32 28" width="20" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="28" height="20" rx="3"/><path d="M5 13h5l3-7 5 13 3-6h6M12 26h8M16 22v4"/></svg></button>${row.newCapture || row.candidate ? ` <button class="review-action" data-keep="${escape(row.name)}" title="Accept this scan and its scores" aria-label="Accept this scan and its scores" ${busy || !row.count ? 'disabled' : ''}>✓</button> <button class="review-action" data-discard="${escape(row.name)}" title="Discard ${row.candidate ? 'candidate scan' : 'capture'}" aria-label="Discard ${row.candidate ? 'candidate scan' : 'capture'}" ${busy ? 'disabled' : ''}>✕</button>` : ''}</td></tr>`).join('')}</tbody></table></div>${rows.some(row => (row.newCapture || row.candidate) && row.count) ? '<p class="note">Provisional scores update after Scan. Inspect the waveform, refine the scan, or click ✓ Keep.</p>' : ''}<p class="note">Scores project the measured event and sleep energy at the indicated repetition period. Commands and diagnostics are available in Output → EM•Scope.</p>${editing ? `<dialog open><form id="scan-form"><h2>Scan ${escape(editing.name)}</h2><p>Uncheck a field to override it. A blank override omits that option.</p>${scanInputs(scanDefaults, editing.overrides ?? {})}<div class="actions"><button type="button" id="cancel">Cancel</button><button type="submit">Scan</button></div></form></dialog>` : ''}
+    ${editingDefaults ? `<dialog open><form id="defaults-form"><h2>Capture collection settings</h2><p>Workload period: ${workloadSeconds} s</p><h3>Scan defaults</h3>${scanInputs(scanDefaults)}<p>Blank fields use EM•Scope defaults. Refresh applies these settings to inheriting captures.</p><div class="actions"><button type="button" id="cancel-defaults">Cancel</button><button type="submit">Save</button></div></form></dialog>` : ''}
     <script nonce="${nonce}">
     const vscode = acquireVsCodeApi();
     document.querySelectorAll('[data-sort]').forEach(button => button.addEventListener('click', () => vscode.postMessage({kind:'sort',key:button.dataset.sort})));
@@ -604,7 +616,6 @@ function html(root: string, rows: Row[], status: string, nonce: string, editing?
     document.querySelectorAll('[data-edit]').forEach(button => button.addEventListener('click', () => vscode.postMessage({kind:'edit',name:button.dataset.edit})));
     document.querySelectorAll('[data-waveform]').forEach(button => button.addEventListener('click', () => vscode.postMessage({kind:'waveform',name:button.dataset.waveform})));
     document.getElementById('home-captures').addEventListener('click', () => vscode.postMessage({kind:'home-captures'}));
-    document.getElementById('choose-captures').addEventListener('click', () => vscode.postMessage({kind:'choose'}));
     document.getElementById('refresh-captures').addEventListener('click', () => vscode.postMessage({kind:'refresh'}));
     document.getElementById('reset-view').addEventListener('click', () => vscode.postMessage({kind:'reset-view'}));
     document.getElementById('grab-capture').addEventListener('click', () => vscode.postMessage({kind:'grab'}));
@@ -804,6 +815,6 @@ function scanInputs(defaults: ScanValues, overrides?: ScanValues): string {
         const folderValue = String(defaults[field] ?? '')
         const value = overrides === undefined || inherited ? folderValue : String(overrides[field] ?? '')
         const placeholder = field === 'sleep-window' ? '500 (CLI default)' : 'Not set'
-        return `<div class="scan-field"><label>${label}<input name="${field}" type="number" min="0" step="${field === 'trim' ? '1' : 'any'}" value="${escape(value)}" data-folder-value="${escape(folderValue)}" placeholder="${placeholder}"></label><small>${help}</small>${overrides === undefined ? '' : `<label class="inherit-window"><input name="inherit-${field}" data-inherit="${field}" type="checkbox" ${inherited ? 'checked' : ''}> Use folder default</label>`}</div>`
+        return `<div class="scan-field"><label>${label}<input name="${field}" type="number" min="0" step="${field === 'trim' ? '1' : 'any'}" value="${escape(value)}" data-folder-value="${escape(folderValue)}" placeholder="${placeholder}"></label><small>${help}</small>${overrides === undefined ? '' : `<label class="inherit-window"><input name="inherit-${field}" data-inherit="${field}" type="checkbox" ${inherited ? 'checked' : ''}> Use collection default</label>`}</div>`
     }).join('')
 }

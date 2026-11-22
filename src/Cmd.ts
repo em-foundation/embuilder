@@ -1,4 +1,5 @@
 import * as ContentView from './ContentView'
+import * as CaptureCollection from './CaptureCollection'
 import * as StatusItems from './StatusItems'
 import * as TourGuide from './TourGuide'
 import * as ToursView from './ToursView'
@@ -149,24 +150,35 @@ export async function newContainer(node: ContentView.Node, cks: string) {
 
 export async function newCaptureCollection(node: ContentView.Node) {
     if (node?.kind !== 'bucket') return
-    const uri = Vsc.Uri.joinPath(node.uri, ContentView.CAPTURE_COLLECTION_NAME)
+    let uri = Vsc.Uri.joinPath(node.uri, CaptureCollection.FOLDER_NAME)
     try {
         let existing: Vsc.FileStat | undefined
         try { existing = await Vsc.workspace.fs.stat(uri) }
         catch (err) {
             if (!(err instanceof Vsc.FileSystemError) || err.code !== 'FileNotFound') throw err
         }
+        if (!existing) {
+            const legacy = Vsc.Uri.joinPath(node.uri, CaptureCollection.LEGACY_FOLDER_NAME)
+            try {
+                existing = await Vsc.workspace.fs.stat(legacy)
+                uri = legacy
+            } catch (err) {
+                if (!(err instanceof Vsc.FileSystemError) || err.code !== 'FileNotFound') throw err
+            }
+        }
         if (existing) {
             if (!(existing.type & Vsc.FileType.Directory) || (existing.type & Vsc.FileType.SymbolicLink)) {
-                throw new Error('em-captures already exists and is not an ordinary folder.')
+                throw new Error('The Capture Collection path already exists and is not an ordinary folder.')
             }
             Vsc.window.showInformationMessage('This bucket already has a Capture Collection.')
         } else {
             await Vsc.workspace.fs.createDirectory(uri)
-            await Vsc.workspace.fs.writeFile(Vsc.Uri.joinPath(uri, '.gitkeep'), new Uint8Array())
+            const config = JSON.stringify(CaptureCollection.DEFAULTS, null, 4) + '\n'
+            await Vsc.workspace.fs.writeFile(Vsc.Uri.joinPath(uri, CaptureCollection.CONFIG_NAME), Buffer.from(config, 'utf8'))
         }
         ContentView.refresh(node)
         await ContentView.revealUri(uri)
+        await Vsc.commands.executeCommand('embuilder.showScope', uri)
     } catch (err) {
         Vsc.window.showErrorMessage('Unable to create Capture Collection: ' + String(err))
     }
