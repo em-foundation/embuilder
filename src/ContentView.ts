@@ -2,7 +2,9 @@ import * as Vsc from 'vscode'
 
 const VscFs = Vsc.workspace.fs
 
-type NodeKind = 'workspace' | 'package' | 'bucket' | 'dir' | 'file' | 'build'
+export const CAPTURE_COLLECTION_NAME = 'em-captures'
+
+type NodeKind = 'workspace' | 'package' | 'bucket' | 'captures' | 'dir' | 'file' | 'build'
 
 let curNodeMap = new Map<string, Node>()
 let curRoot: Node | null = null
@@ -244,6 +246,15 @@ export class Provider implements Vsc.TreeDataProvider<Node> {
                 const uri = Vsc.Uri.joinPath(element.uri, name)
 
                 if ((type & Vsc.FileType.Directory) !== 0) {
+                    if (element.kind === 'bucket' && name === CAPTURE_COLLECTION_NAME) {
+                        const item = new Node(element, 'captures', uri, name, Vsc.TreeItemCollapsibleState.None)
+                        item.resourceUri = uri
+                        item.tooltip = 'Capture Collection — open in EM•Scope'
+                        item.iconPath = this.icon('icons/captures.svg')
+                        item.contextValue = 'embuilder.captures'
+                        item.command = { command: 'embuilder.openCaptureCollection', title: 'Open in EM•Scope', arguments: [item] }
+                        return item
+                    }
                     const item = new Node(element, 'dir', uri, name, Vsc.TreeItemCollapsibleState.Collapsed)
                     item.iconPath = this.icon('icons/folder.svg')
                     item.contextValue = 'embuilder.dir'
@@ -263,8 +274,8 @@ export class Provider implements Vsc.TreeDataProvider<Node> {
 
             // folders first, then files
             nodes.sort((a, b) => {
-                const ak = a.kind === 'dir' ? 0 : 1
-                const bk = b.kind === 'dir' ? 0 : 1
+                const ak = a.kind === 'dir' || a.kind === 'captures' ? 0 : 1
+                const bk = b.kind === 'dir' || b.kind === 'captures' ? 0 : 1
                 if (ak !== bk) return ak - bk
                 return a.label!.toString().localeCompare(b.label!.toString())
             })

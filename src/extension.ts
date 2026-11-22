@@ -87,6 +87,9 @@ export async function activate(ctx: Vsc.ExtensionContext) {
             })
         )
 
+        ctx.subscriptions.push(Vsc.commands.registerCommand('em.newCaptureCollection', Cmd.newCaptureCollection))
+        ctx.subscriptions.push(Vsc.commands.registerCommand('embuilder.openCaptureCollection', Cmd.openCaptureCollection))
+
         for (const cks of ['Bucket', 'Package']) {
             Vsc.commands.registerCommand(`em.new${cks}`, async (node: ContentView.Node) => {
                 if (node?.uri) await Cmd.newContainer(node, cks)

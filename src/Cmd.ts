@@ -147,6 +147,36 @@ export async function newContainer(node: ContentView.Node, cks: string) {
     await ContentView.reveal(newnode)
 }
 
+export async function newCaptureCollection(node: ContentView.Node) {
+    if (node?.kind !== 'bucket') return
+    const uri = Vsc.Uri.joinPath(node.uri, ContentView.CAPTURE_COLLECTION_NAME)
+    try {
+        let existing: Vsc.FileStat | undefined
+        try { existing = await Vsc.workspace.fs.stat(uri) }
+        catch (err) {
+            if (!(err instanceof Vsc.FileSystemError) || err.code !== 'FileNotFound') throw err
+        }
+        if (existing) {
+            if (!(existing.type & Vsc.FileType.Directory) || (existing.type & Vsc.FileType.SymbolicLink)) {
+                throw new Error('em-captures already exists and is not an ordinary folder.')
+            }
+            Vsc.window.showInformationMessage('This bucket already has a Capture Collection.')
+        } else {
+            await Vsc.workspace.fs.createDirectory(uri)
+            await Vsc.workspace.fs.writeFile(Vsc.Uri.joinPath(uri, '.gitkeep'), new Uint8Array())
+        }
+        ContentView.refresh(node)
+        await ContentView.revealUri(uri)
+    } catch (err) {
+        Vsc.window.showErrorMessage('Unable to create Capture Collection: ' + String(err))
+    }
+}
+
+export async function openCaptureCollection(node: ContentView.Node) {
+    if (node?.kind !== 'captures') return
+    await Vsc.commands.executeCommand('embuilder.showScope', node.uri)
+}
+
 export async function newUnit(node: ContentView.Node, uks: string) {
     const content = UNIT_CONTENT.get(uks)!
     const newuri = await Utils.newUnit(node.uri, uks, content.trim() + '\n')
