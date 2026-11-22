@@ -25,7 +25,7 @@ export function identifier(project: string, folder: string): string | undefined 
     if (Path.isAbsolute(relative)) return
     const parts = relative.split(Path.sep)
     if (parts.length !== 3 || parts.some(part => !part || part === '.' || part === '..') || !isFolderName(parts[2])) return
-    return parts[0] + ':' + parts[1]
+    return parts[0] + '://' + parts[1]
 }
 
 export async function readSettings(folder: string): Promise<Settings> {

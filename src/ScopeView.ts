@@ -542,7 +542,7 @@ function html(collectionName: string, rows: Row[], status: string, nonce: string
     h1 { font-size: 28px; font-weight: 600; letter-spacing: -.6px; margin: 0; }
     .dot { color: var(--scope-accent); }
     .subtitle { margin: 0; color: var(--vscode-descriptionForeground); font-size: 12px; }
-    .root { font-family: var(--vscode-editor-font-family); font-size: 12px; margin: 18px 0 24px; overflow-wrap: anywhere; }
+    .root { color: ${EM_COLOR}; font-family: var(--vscode-editor-font-family); font-size: 12px; margin: 18px 0 24px; overflow-wrap: anywhere; }
     .table { border: 1px solid var(--vscode-panel-border); border-radius: 8px; }
     table { margin-top: 0; }
     thead { background: var(--vscode-editor-inactiveSelectionBackground); }
