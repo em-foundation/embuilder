@@ -1,6 +1,7 @@
 import * as ContentView from './ContentView'
 import * as CaptureCollection from './CaptureCollection'
 import * as StatusItems from './StatusItems'
+import * as ScopeView from './ScopeView'
 import * as TourGuide from './TourGuide'
 import * as ToursView from './ToursView'
 import * as Utils from './Utils'
@@ -215,6 +216,7 @@ export async function remove(node: ContentView.Node) {
     )
     if (ok !== 'Remove') return
 
+    ScopeView.closeForRemoval(node.uri)
     const rem = node.uri.toString()
 
     for (const ed of Vsc.window.visibleTextEditors) {

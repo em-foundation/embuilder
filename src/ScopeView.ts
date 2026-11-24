@@ -36,6 +36,11 @@ let currentPanel: Vsc.WebviewPanel | undefined
 let currentRoot: string | undefined
 let rootListeners: Vsc.Disposable[] = []
 
+export function closeForRemoval(uri: Vsc.Uri) {
+    if (!currentRoot || !currentPanel) return
+    const relative = Path.relative(uri.fsPath, Vsc.Uri.parse(currentRoot).fsPath)
+    if (!Path.isAbsolute(relative) && !relative.split(Path.sep).includes('..')) currentPanel.dispose()
+}
 export function init(ctx: Vsc.ExtensionContext) {
     scopeStatus = Vsc.window.createStatusBarItem(Vsc.StatusBarAlignment.Left, 9)
     scopeStatus.name = 'EM•Scope status'
