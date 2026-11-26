@@ -152,6 +152,22 @@ export const vcdC = new class Download {
 }
 
 export function init(ctx: Vsc.ExtensionContext) {
+    const home = Vsc.window.createStatusBarItem(Vsc.StatusBarAlignment.Left, 40)
+    home.name = 'EM•Home'
+    home.text = '$(home)'
+    home.tooltip = 'Open EM•Home'
+    home.command = 'embuilder.showWelcome'
+    home.color = EM_COLOR
+    home.show()
+    ctx.subscriptions.push(home)
+    const whatsNew = Vsc.window.createStatusBarItem(Vsc.StatusBarAlignment.Left, 39)
+    whatsNew.name = "What's New"
+    whatsNew.text = '$(history)'
+    whatsNew.tooltip = "What's New — Open changelog"
+    whatsNew.command = 'embuilder.showChangelog'
+    whatsNew.color = EM_COLOR
+    whatsNew.show()
+    ctx.subscriptions.push(whatsNew)
     const vers = Vsc.window.createStatusBarItem(Vsc.StatusBarAlignment.Left, 30)
     vers.text = `$(terminal) EM•Script v${Utils.getVersCliFull()}`
     vers.color = EM_COLOR
