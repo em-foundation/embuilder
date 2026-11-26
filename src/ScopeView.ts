@@ -254,7 +254,12 @@ export function init(ctx: Vsc.ExtensionContext) {
                 catch (err) { output.appendLine(`${row.name}: Default scan failed: ${message(err)}`) }
                 await preview(row)
                 scopeStatus.text = '$(sync~spin) EM•Scope: Packing…'
-                try { await command(cli, ['pack', '-z'], dir, output) }
+                try {
+                    // pack -z preserves existing archives. Remove the previous run's ZIP
+                    // so successful acquisition always produces an archive of the new data.
+                    await Fs.rm(Path.join(dir, 'emscope-capture.zip'), { force: true })
+                    await command(cli, ['pack', '-z'], dir, output)
+                }
                 catch (err) { output.appendLine(message(err)); Vsc.window.showWarningMessage('Capture saved, but packing failed. See EM•Scope Output.') }
             }
             rootListeners.push(panel.webview.onDidReceiveMessage(async msg => {
