@@ -303,6 +303,12 @@ ${bodyText}
 </div>
 <script nonce='${nonce}'>
   const vscode = acquireVsCodeApi()
+  document.addEventListener('keydown', (e) => {
+    const link = e.target.closest('.cmd-wc[role="button"]')
+    if (!link || (e.key !== 'Enter' && e.key !== ' ')) return
+    e.preventDefault()
+    link.click()
+  })
   const frame = document.querySelector('.frame')
   const footer = document.querySelector('.home-footer')
   if (footer) document.body.appendChild(footer)

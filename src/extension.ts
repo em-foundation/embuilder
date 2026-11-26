@@ -75,6 +75,9 @@ export async function activate(ctx: Vsc.ExtensionContext) {
         ctx.subscriptions.push(Vsc.commands.registerCommand('embuilder.revealActiveUnit', Cmd.revealUnit))
         ctx.subscriptions.push(Vsc.commands.registerCommand('embuilder.screenshot', Cmd.screenshot))
         ctx.subscriptions.push(Vsc.commands.registerCommand('embuilder.showWelcome', Cmd.showWelcome))
+        ctx.subscriptions.push(Vsc.commands.registerCommand('embuilder.showChangelog', async () => {
+            await Vsc.commands.executeCommand('markdown.showPreview', Vsc.Uri.joinPath(Utils.rootUri(), 'CHANGELOG.md'))
+        }))
         ctx.subscriptions.push(Vsc.commands.registerCommand('embuilder.startFirstTour', Cmd.startFirstTour))
         ctx.subscriptions.push(
             Vsc.commands.registerCommand('embuilder.revealInExplorer', async (node: ContentView.Node) => {
