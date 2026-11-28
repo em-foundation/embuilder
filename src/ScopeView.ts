@@ -12,7 +12,10 @@ const GRAB_DURATION_SECONDS = 6
 const DEFAULT_TRIM_CYCLES = GRAB_DURATION_SECONDS - 2
 
 type Score = { type: string, sleepCurrent: number, eventEnergy: number, emeralds: number }
-type CaptureInfo = { version: 1, program: string, board: string, setup: string, acquisition?: { mode: '-S' | '-A', voltage: number, duration: number } }
+const imageSections = ['text', 'const', 'data', 'bss'] as const
+type ImageSizes = Record<typeof imageSections[number], number>
+type BuildIdentity = { program: string, board: string, setup: string }
+type CaptureInfo = BuildIdentity & { version: 1, imageSizes?: ImageSizes, acquisition?: { mode: '-S' | '-A', voltage: number, duration: number } }
 const CAPTURE_INFO = 'emscope-capture.json'
 type CaptureDetails = { mode: '-S' | '-A', name: string, program: string, board: string, setup: string, title: string, error?: string }
 type Row = { info?: CaptureInfo, replacement?: boolean, name: string, dir: string, status: string, newCapture?: boolean, candidate?: string, overrides?: ScanValues, count?: number, options?: string[], one?: Score, ten?: Score }
@@ -291,7 +294,8 @@ export function init(ctx: Vsc.ExtensionContext) {
                         const dir = await createCaptureFolder(root.fsPath, name)
                         const previous = rows.findIndex(item => item.name === name)
                         if (previous !== -1) rows.splice(previous, 1)
-                        const info: CaptureInfo = { version: 1, program: program.trim(), board, setup, acquisition: { mode, voltage: 3.0, duration: GRAB_DURATION_SECONDS } }
+                        const imageSizes = sameBuildIdentity(defaults, details) ? defaults.imageSizes : undefined
+                        const info: CaptureInfo = { version: 1, program, board, setup, imageSizes, acquisition: { mode, voltage: 3.0, duration: GRAB_DURATION_SECONDS } }
                         row = { name, dir, info, status: 'Grabbing…', newCapture: true }
                         rows.unshift(row)
                         render('')
@@ -382,11 +386,12 @@ export function init(ctx: Vsc.ExtensionContext) {
                     busy = true
                     try {
                         assertCaptureDirectory(root.fsPath, row.dir)
-                        const info = row.info ?? { version: 1 as const, program: '', board: '', setup: '' }
+                        const info: CaptureInfo = row.info ?? { version: 1, program: '', board: '', setup: '' }
                         const details = await requestCaptureDetails({ title: 'Edit Capture', name: row.name, program: info.program, board: info.board, setup: info.setup, mode: info.acquisition?.mode ?? '-S' }, row.name)
                         if (!details || disposed) return
                         const { name, program, board, setup } = details
-                        const nextInfo: CaptureInfo = { ...info, program, board, setup, acquisition: { voltage: 3.0, duration: GRAB_DURATION_SECONDS, ...info.acquisition, mode: details.mode } }
+                        const imageSizes = sameBuildIdentity(info, details) ? info.imageSizes : undefined
+                        const nextInfo: CaptureInfo = { ...info, program, board, setup, imageSizes, acquisition: { voltage: 3.0, duration: GRAB_DURATION_SECONDS, ...info.acquisition, mode: details.mode } }
                         if (name !== row.name) {
                             const problem = await validateCaptureName(root.fsPath, name)
                             if (problem) throw new Error(problem)
@@ -629,21 +634,49 @@ export function init(ctx: Vsc.ExtensionContext) {
 
 function captureTooltip(row: Row): string {
     const info = row.info
+    const sizes = info?.imageSizes
     return [row.name, info?.program && 'Program: ' + info.program, info?.board && 'Board: ' + info.board,
-        info?.setup && 'Setup: ' + info.setup, 'Right-click for capture actions'].filter(Boolean).join('\n')
+        info?.setup && 'Setup: ' + info.setup,
+        sizes && 'Image size (bytes): ' + imageSections.map(section => `${section} ${sizes[section].toLocaleString()}`).join(', '),
+        'Right-click for capture actions'].filter(Boolean).join('\n')
 }
-async function readBuildProvenance(project: string): Promise<Pick<CaptureInfo, 'program' | 'board' | 'setup'>> {
+
+function sameBuildIdentity(a: BuildIdentity, b: BuildIdentity): boolean {
+    return a.program === b.program && a.board === b.board && a.setup === b.setup
+}
+
+async function readBuildProvenance(project: string): Promise<BuildIdentity & { imageSizes?: ImageSizes }> {
+    const buildDir = Path.join(project, 'workspace', '.emscript')
     const read = async (file: string) => {
-        try { return (await Fs.readFile(Path.join(project, 'workspace', '.emscript', file), 'utf8')).trim() }
+        try { return (await Fs.readFile(Path.join(buildDir, file), 'utf8')).trim() }
         catch (err) { if ((err as NodeJS.ErrnoException).code === 'ENOENT') return ''; throw err }
     }
     const [program, board, setup] = await Promise.all([read('.PROG'), read('.BOARD'), read('.SETUP')])
-    return { program, board, setup }
+    const imageSizes = program && board && setup
+        ? parseImageSizes(await read(Path.join('.out', 'main.out.dis')))
+        : undefined
+    return { program, board, setup, imageSizes }
+}
+
+function parseImageSizes(disassembly: string): ImageSizes | undefined {
+    const header = disassembly.split(/^\s*Disassembly of section\b/m, 1)[0]
+    const sizes: ImageSizes = { text: 0, const: 0, data: 0, bss: 0 }
+    let found = false
+    for (const match of header.matchAll(/^[ \t]*\d+[ \t]+\.(text|const|data|bss)[ \t]+([\da-f]+)[ \t]+[\da-f]+\b/gim)) {
+        const section = match[1] as keyof ImageSizes
+        const bytes = Number.parseInt(match[2], 16)
+        if (!Number.isSafeInteger(bytes)) return undefined
+        sizes[section] = bytes
+        found = true
+    }
+    return found ? sizes : undefined
 }
 async function readCaptureInfo(dir: string): Promise<CaptureInfo | undefined> {
     try {
         const value = JSON.parse(await Fs.readFile(Path.join(dir, CAPTURE_INFO), 'utf8')) as CaptureInfo
         if (value.version !== 1 || typeof value.program !== 'string' || typeof value.board !== 'string' || typeof value.setup !== 'string') throw new Error('Invalid capture provenance')
+        const sizes = value.imageSizes
+        if (!sizes || !imageSections.every(section => Number.isSafeInteger(sizes[section]) && sizes[section] >= 0)) delete value.imageSizes
         const a = value.acquisition
         if (a && (!['-S', '-A'].includes(a.mode) || !Number.isFinite(a.voltage) || a.voltage <= 0 || !Number.isFinite(a.duration) || a.duration <= 0)) throw new Error('Invalid acquisition settings')
         return value
