@@ -194,7 +194,13 @@ function mkBoardNames(): string[] {
             }
         }
     }
-    res.sort()
+    res.sort((a, b) => {
+        const [distroA, boardA] = mkNames(a)
+        const [distroB, boardB] = mkNames(b)
+        if (distroA !== distroB) return distroA < distroB ? -1 : 1
+        if (boardA === boardB) return 0
+        return boardA < boardB ? -1 : 1
+    })
     res.push('<bare-metal>')
     res.push('<empty>')
     return res
